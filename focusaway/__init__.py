@@ -1,0 +1,2 @@
+"""FocusAway middleware package."""
+

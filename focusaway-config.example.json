@@ -1,0 +1,22 @@
+{
+  "host": "127.0.0.1",
+  "port": 8787,
+  "timezone": "Asia/Seoul",
+  "database_path": "focusaway.db",
+  "max_request_bytes": 10485760,
+  "cors_allowed_origins": "http://127.0.0.1:3000,http://localhost:3000",
+  "upstream_base_url": "http://127.0.0.1:11434",
+  "upstream_api_prefix": "/v1",
+  "upstream_models_path": "/v1/models",
+  "upstream_api_key": "replace_with_upstream_api_key_or_encrypted_value",
+  "upstream_auth_mode": "bearer",
+  "upstream_auth_header": "Authorization",
+  "upstream_auth_scheme": "Bearer",
+  "upstream_extra_headers": "",
+  "upstream_timeout_seconds": 300,
+  "session_hours": 168,
+  "app_name": "FocusAway",
+  "operator_name": "FocusAway 운영자",
+  "contact_email": "operator@example.com",
+  "contact_address": ""
+}
