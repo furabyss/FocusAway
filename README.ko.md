@@ -1,12 +1,16 @@
 # FocusAway
 
+<p align="center">
+  <a href="README.md">English</a> ·
+  <b>한국어</b>
+</p>
+<br />
+
 FocusAway는 로컬 또는 소규모 그룹용 LLM 서비스를 운영하기 위한 OpenAI 호환 미들웨어입니다.
 
 구조는 다음과 같습니다.
 
-```text
 프론트엔드 -> FocusAway -> OpenAI 호환 업스트림 백엔드
-```
 
 실제 모델 실행은 업스트림 백엔드가 담당합니다. FocusAway는 사용자 계정, 사용자별 API 키, 모델 접근 정책, 할당량 차감, 웹 관리 패널을 담당합니다.
 
