@@ -1,12 +1,16 @@
 # FocusAway
 
+<p align="center">
+  <b>English</b> ·
+  <a href="README.ko.md">한국어</a>
+</p>
+<br />
+
 FocusAway is a small OpenAI-compatible middleware for local or small-group LLM service operation.
 
 It sits between end-user frontends and one upstream OpenAI-compatible backend:
 
-```text
 frontend -> FocusAway -> upstream OpenAI-compatible backend
-```
 
 The upstream backend runs the models. FocusAway handles user accounts, per-user API keys, model access policy, quota charging, and a browser-based control panel.
 
