@@ -19,7 +19,7 @@ from .security import generate_token
 from .upstream import UpstreamClient
 
 
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.0.1"
 APP_COPYRIGHT = "ⓒ 2026 Fur-Abyss."
 
 
@@ -1091,6 +1091,14 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
             for item in usage
         ) or "<tr><td colspan='4'>아직 사용 내역이 없습니다.</td></tr>"
         admin_link = '<a href="/admin">관리자 패널</a>' if user["is_admin"] else ""
+        delete_account_form = ""
+        if not user["is_admin"]:
+            delete_account_form = f"""
+          <form method="post" action="/account/delete" onsubmit="return confirm('정말로 계정을 탈퇴하시겠습니까? 이 작업은 되돌릴 수 없습니다.');">
+            {self.render_csrf_input()}
+            <button class="secondary" type="submit">계정 탈퇴</button>
+          </form>
+          """
         account_actions = f"""
         <section class="card">
           <h2>계정 관리</h2>
@@ -1100,15 +1108,7 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
             <label>새 비밀번호<input type="password" name="new_password" minlength="8" required></label>
             <button type="submit">비밀번호 변경</button>
           </form>
-          {""
-            if user["is_admin"]
-            else f'''
-          <form method="post" action="/account/delete" onsubmit="return confirm('정말로 계정을 탈퇴하시겠습니까? 이 작업은 되돌릴 수 없습니다.');">
-            {self.render_csrf_input()}
-            <button class="secondary" type="submit">계정 탈퇴</button>
-          </form>
-          '''
-          }
+          {delete_account_form}
         </section>
         """
         body = f"""
@@ -1567,8 +1567,20 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
               <td><span class="hint">관리자 전용</span></td>
             </tr>
         """
-        tier_rows = "".join(
-            f"""
+        tier_row_parts = []
+        for tier in tiers:
+            if tier["is_system"]:
+                tier_action = '<span class="hint">기본 티어</span>'
+            else:
+                tier_action = f"""
+                  <form method="post" action="/admin/tiers/delete" onsubmit="return confirm('이 티어를 삭제하시겠습니까? 소속 회원과 모델 설정은 인접 티어로 이동됩니다.');">
+                    {self.render_csrf_input()}
+                    <input type="hidden" name="tier_id" value="{tier['id']}">
+                    <button class="icon-btn" type="submit" aria-label="티어 삭제" title="삭제">{self.trash_icon_svg()}</button>
+                  </form>
+                """
+            tier_row_parts.append(
+                f"""
             <tr>
               <td>
                 <input type="hidden" name="tier_id" value="{tier['id']}" form="tier-bulk-form">
@@ -1592,13 +1604,13 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
                     <input type="hidden" name="direction" value="down">
                     <button class="icon-btn" type="submit" aria-label="티어 아래로 이동" title="아래로">{self.arrow_down_icon_svg()}</button>
                   </form>
-                  {"<span class=\"hint\">기본 티어</span>" if tier['is_system'] else f'''<form method="post" action="/admin/tiers/delete" onsubmit="return confirm('이 티어를 삭제하시겠습니까? 소속 회원과 모델 설정은 인접 티어로 이동됩니다.');">{self.render_csrf_input()}<input type="hidden" name="tier_id" value="{tier['id']}"><button class="icon-btn" type="submit" aria-label="티어 삭제" title="삭제">{self.trash_icon_svg()}</button></form>'''}
+                  {tier_action}
                 </div>
               </td>
             </tr>
             """
-            for tier in tiers
-        )
+            )
+        tier_rows = "".join(tier_row_parts)
         tier_rows = admin_tier_row + (tier_rows or "<tr><td colspan='4'>티어가 없습니다.</td></tr>")
         model_cards = "".join(
             f"""

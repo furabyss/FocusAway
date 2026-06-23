@@ -101,16 +101,6 @@ class Launcher:
         self.make_button(actions, "서버 중지", self.stop).pack(side="left")
         self.make_button(actions, "웹 패널 열기", self.open_panel).pack(side="right")
 
-        hints = tk.Label(
-            shell,
-            text="문제가 생기면 같은 폴더의 focusaway-launcher.log 를 확인해 주세요.",
-            font=("Helvetica", 11),
-            bg="#f5f5f7",
-            fg="#6b7280",
-            anchor="w",
-        )
-        hints.pack(fill="x", pady=(12, 0))
-
     def add_labeled_entry(
         self,
         parent: tk.Widget,
