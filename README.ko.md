@@ -14,6 +14,8 @@ FocusAway는 로컬 또는 소규모 그룹용 LLM 서비스를 운영하기 위
 
 실제 모델 실행은 업스트림 백엔드가 담당합니다. FocusAway는 사용자 계정, 사용자별 API 키, 모델 접근 정책, 할당량 차감, 웹 관리 패널을 담당합니다.
 
+<a href='https://ko-fi.com/I2I41WXL3D' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi6.png?v=6' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>
+
 ## 주요 기능
 
 - 사용자에게 OpenAI 호환 API 제공.
