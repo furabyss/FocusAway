@@ -14,6 +14,8 @@ frontend -> FocusAway -> upstream OpenAI-compatible backend
 
 The upstream backend runs the models. FocusAway handles user accounts, per-user API keys, model access policy, quota charging, and a browser-based control panel.
 
+<a href='https://ko-fi.com/I2I41WXL3D' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi6.png?v=6' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>
+
 ## Features
 
 - OpenAI-compatible user-facing API.
