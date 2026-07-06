@@ -18,5 +18,6 @@
   "app_name": "FocusAway",
   "operator_name": "FocusAway 운영자",
   "contact_email": "operator@example.com",
-  "contact_address": ""
+  "contact_address": "",
+  "launcher_language": "en"
 }

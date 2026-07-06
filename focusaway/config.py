@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import locale
 import os
 from dataclasses import dataclass
 from pathlib import Path
@@ -33,6 +34,16 @@ class AppConfig:
     operator_name: str = "FocusAway 운영자"
     contact_email: str = ""
     contact_address: str = ""
+    launcher_language: str = ""
+
+
+def normalize_language(value: str | None) -> str:
+    return "ko" if str(value or "").strip().lower().startswith("ko") else "en"
+
+
+def default_language_from_os() -> str:
+    lang = locale.getlocale()[0] or os.environ.get("LANG", "")
+    return normalize_language(lang)
 
 
 def load_config(config_path: str | None = None) -> AppConfig:
@@ -51,6 +62,10 @@ def load_config(config_path: str | None = None) -> AppConfig:
                 os.chmod(path, 0o600)
             except OSError:
                 pass
+
+    launcher_language = data.get("launcher_language", "")
+    if not launcher_language:
+        launcher_language = default_language_from_os()
 
     return AppConfig(
         host=os.environ.get("FOCUSAWAY_HOST", data.get("host", AppConfig.host)),
@@ -109,6 +124,9 @@ def load_config(config_path: str | None = None) -> AppConfig:
             "FOCUSAWAY_CONTACT_ADDRESS",
             data.get("contact_address", AppConfig.contact_address),
         ),
+        launcher_language=normalize_language(
+            os.environ.get("FOCUSAWAY_LAUNCHER_LANGUAGE", launcher_language)
+        ),
     )
 
 
@@ -138,6 +156,7 @@ def save_config(config: AppConfig, config_path: str | None = None) -> Path:
                 "operator_name": config.operator_name,
                 "contact_email": config.contact_email,
                 "contact_address": config.contact_address,
+                "launcher_language": normalize_language(config.launcher_language),
             },
             indent=2,
         )

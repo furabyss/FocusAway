@@ -12,6 +12,42 @@ from focusaway.config import AppConfig, load_config, save_config
 
 
 LOG_PATH = Path(__file__).resolve().parent / "focusaway-launcher.log"
+LANGUAGE_OPTIONS = {"한국어": "ko", "English": "en"}
+LANGUAGE_LABELS = {value: label for label, value in LANGUAGE_OPTIONS.items()}
+TEXT = {
+    "ko": {
+        "subtitle": "로컬 OpenAI 호환 백엔드용 미들웨어 런처",
+        "status_ready": "준비됨",
+        "save": "저장",
+        "start": "서버 시작",
+        "stop": "서버 중지",
+        "open_panel": "웹 패널 열기",
+        "language": "언어:",
+        "saved": "설정을 저장했습니다: {name}",
+        "saved_dialog": "설정을 저장했습니다.\n{path}",
+        "already_running": "이미 실행 중입니다.",
+        "port_error": "Port 값은 숫자여야 합니다.",
+        "running": "실행 중: {url}",
+        "stopped": "중지됨",
+        "startup_error": "런처 시작 중 오류가 발생했습니다.\nfocusaway-launcher.log 파일을 확인해 주세요.",
+    },
+    "en": {
+        "subtitle": "Middleware launcher for local OpenAI-compatible backends",
+        "status_ready": "Ready",
+        "save": "Save",
+        "start": "Start Server",
+        "stop": "Stop Server",
+        "open_panel": "Open Web Panel",
+        "language": "Language:",
+        "saved": "Settings saved: {name}",
+        "saved_dialog": "Settings saved.\n{path}",
+        "already_running": "Already running.",
+        "port_error": "Port must be a number.",
+        "running": "Running: {url}",
+        "stopped": "Stopped",
+        "startup_error": "An error occurred while starting the launcher.\nPlease check focusaway-launcher.log.",
+    },
+}
 
 
 def write_log(message: str) -> None:
@@ -37,7 +73,9 @@ class Launcher:
         self.auth_mode_var = tk.StringVar(value=self.config.upstream_auth_mode)
         self.auth_header_var = tk.StringVar(value=self.config.upstream_auth_header)
         self.auth_scheme_var = tk.StringVar(value=self.config.upstream_auth_scheme)
-        self.status_var = tk.StringVar(value="준비됨")
+        self.language_var = tk.StringVar(value=LANGUAGE_LABELS.get(self.config.launcher_language, "English"))
+        self.status_var = tk.StringVar(value=self.t("status_ready"))
+        self.translated_widgets: dict[str, tk.Widget] = {}
 
         self.build_ui()
         self.root.protocol("WM_DELETE_WINDOW", self.on_close)
@@ -49,22 +87,40 @@ class Launcher:
         header = tk.Frame(shell, bg="#f5f5f7")
         header.pack(fill="x", pady=(0, 18))
 
+        title_row = tk.Frame(header, bg="#f5f5f7")
+        title_row.pack(fill="x")
+
         tk.Label(
-            header,
+            title_row,
             text="FocusAway",
             font=("Helvetica", 24, "bold"),
             bg="#f5f5f7",
             fg="#18181b",
             anchor="w",
-        ).pack(fill="x")
-        tk.Label(
+        ).pack(side="left", fill="x", expand=True)
+        language_box = tk.Frame(title_row, bg="#f5f5f7")
+        language_box.pack(side="right")
+        self.translated_widgets["language_label"] = tk.Label(
+            language_box,
+            text=self.t("language"),
+            font=("Helvetica", 10),
+            bg="#f5f5f7",
+            fg="#4b5563",
+        )
+        self.translated_widgets["language_label"].pack(side="left", padx=(0, 6))
+        menu = tk.OptionMenu(language_box, self.language_var, *LANGUAGE_OPTIONS.keys(), command=self.change_language)
+        menu.configure(bg="#ffffff", fg="#18181b", highlightthickness=0, bd=1, relief="solid", activebackground="#f4f4f5")
+        menu.pack(side="left")
+
+        self.translated_widgets["subtitle"] = tk.Label(
             header,
-            text="로컬 OpenAI 호환 백엔드용 미들웨어 런처",
+            text=self.t("subtitle"),
             font=("Helvetica", 12),
             bg="#f5f5f7",
             fg="#6b7280",
             anchor="w",
-        ).pack(fill="x", pady=(6, 0))
+        )
+        self.translated_widgets["subtitle"].pack(fill="x", pady=(6, 0))
 
         form = tk.Frame(shell, bg="#ffffff", bd=1, relief="solid", padx=16, pady=16)
         form.pack(fill="both", expand=True)
@@ -96,10 +152,36 @@ class Launcher:
         actions = tk.Frame(form, bg="#ffffff")
         actions.pack(fill="x")
 
-        self.make_button(actions, "저장", self.save).pack(side="left")
-        self.make_button(actions, "서버 시작", self.start).pack(side="left", padx=8)
-        self.make_button(actions, "서버 중지", self.stop).pack(side="left")
-        self.make_button(actions, "웹 패널 열기", self.open_panel).pack(side="right")
+        self.translated_widgets["save_button"] = self.make_button(actions, self.t("save"), self.save)
+        self.translated_widgets["save_button"].pack(side="left")
+        self.translated_widgets["start_button"] = self.make_button(actions, self.t("start"), self.start)
+        self.translated_widgets["start_button"].pack(side="left", padx=8)
+        self.translated_widgets["stop_button"] = self.make_button(actions, self.t("stop"), self.stop)
+        self.translated_widgets["stop_button"].pack(side="left")
+        self.translated_widgets["open_panel_button"] = self.make_button(actions, self.t("open_panel"), self.open_panel)
+        self.translated_widgets["open_panel_button"].pack(side="right")
+
+    def current_language(self) -> str:
+        return LANGUAGE_OPTIONS.get(self.language_var.get(), "en")
+
+    def t(self, key: str, **values) -> str:
+        return TEXT.get(getattr(self, "config", AppConfig()).launcher_language or "en", TEXT["en"])[key].format(**values)
+
+    def change_language(self, _choice: str | None = None) -> None:
+        self.config.launcher_language = self.current_language()
+        save_config(self.current_config())
+        self.translated_widgets["language_label"].configure(text=self.t("language"))
+        self.translated_widgets["subtitle"].configure(text=self.t("subtitle"))
+        self.set_button_text(self.translated_widgets["save_button"], self.t("save"))
+        self.set_button_text(self.translated_widgets["start_button"], self.t("start"))
+        self.set_button_text(self.translated_widgets["stop_button"], self.t("stop"))
+        self.set_button_text(self.translated_widgets["open_panel_button"], self.t("open_panel"))
+        self.status_var.set(self.t("status_ready"))
+
+    def set_button_text(self, container: tk.Widget, text: str) -> None:
+        for child in container.winfo_children():
+            if isinstance(child, tk.Label):
+                child.configure(text=text)
 
     def add_labeled_entry(
         self,
@@ -180,23 +262,24 @@ class Launcher:
             operator_name=self.config.operator_name,
             contact_email=self.config.contact_email,
             contact_address=self.config.contact_address,
+            launcher_language=self.current_language(),
         )
 
     def save(self) -> None:
         self.config = self.current_config()
         path = save_config(self.config)
-        self.status_var.set(f"설정을 저장했습니다: {path.name}")
-        messagebox.showinfo("FocusAway", f"설정을 저장했습니다.\n{Path(path).resolve()}")
+        self.status_var.set(self.t("saved", name=path.name))
+        messagebox.showinfo("FocusAway", self.t("saved_dialog", path=Path(path).resolve()))
 
     def start(self) -> None:
         if self.process and self.process.poll() is None:
-            self.status_var.set("이미 실행 중입니다.")
+            self.status_var.set(self.t("already_running"))
             return
 
         try:
             self.config = self.current_config()
         except ValueError:
-            messagebox.showerror("FocusAway", "Port 값은 숫자여야 합니다.")
+            messagebox.showerror("FocusAway", self.t("port_error"))
             return
 
         save_config(self.config)
@@ -209,21 +292,21 @@ class Launcher:
             stdout=handle,
             stderr=subprocess.STDOUT,
         )
-        self.status_var.set(f"실행 중: http://{self.config.host}:{self.config.port}")
+        self.status_var.set(self.t("running", url=f"http://{self.config.host}:{self.config.port}"))
 
     def stop(self) -> None:
         if not self.process or self.process.poll() is not None:
-            self.status_var.set("중지됨")
+            self.status_var.set(self.t("stopped"))
             return
         self.process.terminate()
         self.process.wait(timeout=5)
-        self.status_var.set("중지됨")
+        self.status_var.set(self.t("stopped"))
 
     def open_panel(self) -> None:
         try:
             config = self.current_config()
         except ValueError:
-            messagebox.showerror("FocusAway", "Port 값은 숫자여야 합니다.")
+            messagebox.showerror("FocusAway", self.t("port_error"))
             return
         webbrowser.open(f"http://{config.host}:{config.port}")
 
@@ -250,7 +333,7 @@ def main() -> None:
             root.withdraw()
             messagebox.showerror(
                 "FocusAway Launcher Error",
-                "런처 시작 중 오류가 발생했습니다.\nfocusaway-launcher.log 파일을 확인해 주세요.",
+                TEXT["en"]["startup_error"],
             )
             root.destroy()
         except Exception:

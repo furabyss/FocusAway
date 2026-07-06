@@ -19,13 +19,214 @@ from .security import generate_token
 from .upstream import UpstreamClient
 
 
-APP_VERSION = "1.0.1"
+APP_VERSION = "1.0.2"
 APP_COPYRIGHT = "ⓒ 2026 Fur-Abyss."
+LANGUAGE_OPTIONS = {"ko": "한국어", "en": "English"}
+TEXT = {
+    "ko": {
+        "language": "언어:",
+        "login": "로그인",
+        "signup": "회원가입",
+        "dashboard": "대시보드",
+        "admin_panel": "관리자 패널",
+        "logout": "로그아웃",
+        "username": "아이디",
+        "password": "비밀번호",
+        "current_password": "현재 비밀번호",
+        "new_password": "새 비밀번호",
+        "create_account": "계정 만들기",
+        "already_have_account": "이미 계정이 있어요",
+        "terms": "이용약관",
+        "privacy": "개인정보처리방침",
+        "copy": "복사",
+        "copied": "복사됨",
+        "refresh_failed": "새로고침 실패",
+        "refresh": "새로고침",
+        "save": "저장",
+        "member": "회원",
+        "admin": "관리자",
+        "admin_fixed": "관리자 고정",
+        "admin_protected": "관리자 보호",
+        "normal": "정상",
+        "suspended": "정지됨",
+        "suspend": "정지",
+        "unsuspend": "정지 해제",
+        "delete": "강퇴",
+        "apply": "적용",
+        "tier_or_higher": "{name} 이상",
+        "admin_only": "관리자 전용",
+        "base_tier": "기본 티어",
+        "fixed": "고정",
+        "none": "-",
+        "unassigned": "미지정",
+        "model_name_copy": "모델 이름 복사",
+        "context_window": "컨텍스트 윈도우",
+        "output_token_limit": "출력 토큰 한도",
+        "cost_per_request": "1회 비용",
+        "recent_24h_calls": "최근 24시간 호출 횟수",
+        "total_calls": "총 {count}회",
+        "no_models": "아직 동기화된 모델이 없습니다.",
+        "no_models_refresh": "아직 동기화된 모델이 없습니다. 아래 버튼으로 새로고침해 주세요.",
+        "no_usage": "아직 사용 내역이 없습니다.",
+        "model": "모델",
+        "endpoint": "엔드포인트",
+        "cost": "비용",
+        "time": "시각",
+        "remaining_premium": "남은 프리미엄 요청",
+        "admin_privileges": "관리자 권한",
+        "unlimited": "Unlimited",
+        "weekly_balance": "주간 잔액",
+        "bonus_balance": "보너스 잔액",
+        "weekly_quota": "내 주간 충전량",
+        "api_key": "API 키",
+        "my_api_key": "내 전용 API 키",
+        "api_base": "프론트엔드 입력용 API 주소",
+        "api_root": "OpenAI 호환 API 루트",
+        "loading": "불러오는 중...",
+        "rotate_api_key": "API 키 재발급",
+        "models": "모델 목록",
+        "recent_usage": "최근 사용 내역",
+        "account": "계정 관리",
+        "change_password": "비밀번호 변경",
+        "delete_account": "계정 탈퇴",
+    },
+    "en": {
+        "language": "Language:",
+        "login": "Log In",
+        "signup": "Sign Up",
+        "dashboard": "Dashboard",
+        "admin_panel": "Admin Panel",
+        "logout": "Log Out",
+        "username": "Username",
+        "password": "Password",
+        "current_password": "Current Password",
+        "new_password": "New Password",
+        "create_account": "Create Account",
+        "already_have_account": "I already have an account",
+        "terms": "Terms of Service",
+        "privacy": "Privacy Policy",
+        "copy": "Copy",
+        "copied": "Copied",
+        "refresh_failed": "Refresh failed",
+        "refresh": "Refresh",
+        "save": "Save",
+        "member": "Member",
+        "admin": "Admin",
+        "admin_fixed": "Admin fixed",
+        "admin_protected": "Admin protected",
+        "normal": "Active",
+        "suspended": "Suspended",
+        "suspend": "Suspend",
+        "unsuspend": "Unsuspend",
+        "delete": "Delete",
+        "apply": "Apply",
+        "tier_or_higher": "{name}+",
+        "admin_only": "Admin only",
+        "base_tier": "Base tier",
+        "fixed": "Fixed",
+        "none": "-",
+        "unassigned": "Unassigned",
+        "model_name_copy": "Copy model name",
+        "context_window": "Context Window",
+        "output_token_limit": "Output Token Limit",
+        "cost_per_request": "Cost",
+        "recent_24h_calls": "Calls in the last 24h",
+        "total_calls": "Total {count}",
+        "no_models": "No models have been synchronized yet.",
+        "no_models_refresh": "No models have been synchronized yet. Use the refresh button below.",
+        "no_usage": "No usage yet.",
+        "model": "Model",
+        "endpoint": "Endpoint",
+        "cost": "Cost",
+        "time": "Time",
+        "remaining_premium": "Premium Requests Left",
+        "admin_privileges": "Admin Privileges",
+        "unlimited": "Unlimited",
+        "weekly_balance": "Weekly balance",
+        "bonus_balance": "Bonus balance",
+        "weekly_quota": "My weekly quota",
+        "api_key": "API Key",
+        "my_api_key": "My API Key",
+        "api_base": "API base URL for frontends",
+        "api_root": "OpenAI-compatible API root",
+        "loading": "Loading...",
+        "rotate_api_key": "Rotate API Key",
+        "models": "Models",
+        "recent_usage": "Recent Usage",
+        "account": "Account",
+        "change_password": "Change Password",
+        "delete_account": "Delete Account",
+    },
+}
+EN_REPLACEMENTS = {
+    "관리자 패널": "Admin Panel",
+    "사용자 대시보드": "User Dashboard",
+    "회원 티어, 티어별 주간 충전량, 모델 접근 정책을 관리합니다.": "Manage member tiers, weekly quotas, and model access policies.",
+    "서비스 설정": "Service Settings",
+    "회원가입 상태": "Signup Status",
+    "모델명에 assistant가 포함된 모델은 동기화 시 제외": "Exclude models containing assistant in their name during sync",
+    "티어 자동 승격": "Automatic Tier Promotion",
+    "선택한 조건 중 하나를 만족하면 아래 티어로 자동 승격됩니다.": "Users are promoted to the tier below when any selected condition is met.",
+    "가입 후 경과 시간 조건 사용": "Use elapsed time since signup",
+    "가입 후 프리미엄 요청 누적 사용량 조건 사용": "Use cumulative premium request usage since signup",
+    "이상 사용 시": "or more used",
+    "자동 승격 티어": "Target promotion tier",
+    "선택 안 함": "Not selected",
+    "티어 관리": "Tier Management",
+    "티어 추가": "Add Tier",
+    "티어 이름": "Tier Name",
+    "순서": "Order",
+    "주간 충전량": "Weekly Quota",
+    "작업": "Actions",
+    "1회 비용": "Cost",
+    "티어 전체 저장": "Save All Tiers",
+    "보너스 일괄/개별 지급": "Bulk/Individual Bonus Grant",
+    "지급량": "Amount",
+    "설명": "Description",
+    "대상 아이디 (비우면 전체 지급)": "Target username (blank means all users)",
+    "지급": "Grant",
+    "모델 정책": "Model Policies",
+    "백엔드에서 모델 새로고침": "Refresh Models from Backend",
+    "사용자에게 제공할 모델명": "Public model name",
+    "백엔드 모델 ID": "Backend model ID",
+    "모델 종류": "Model Kind",
+    "서버 기본값": "Server default",
+    "커스텀 컨텍스트 한도": "Custom context limit",
+    "커스텀 출력 한도": "Custom output limit",
+    "비우면 백엔드 기본값": "Blank uses backend default",
+    "사용 가능 티어": "Available Tier",
+    "모델 정책 전체 저장": "Save All Model Policies",
+    "회원 현황": "Users",
+    "고유 번호": "User No.",
+    "아이디": "Username",
+    "현재 티어": "Current Tier",
+    "티어 변경": "Change Tier",
+    "권한": "Role",
+    "상태": "Status",
+    "마지막 접속 IP": "Last Seen IP",
+    "보너스 잔액": "Bonus Balance",
+    "주간 잔액": "Weekly Balance",
+    "회원이 없습니다.": "No users.",
+    "티어가 없습니다.": "No tiers.",
+    "관리자 전용": "Admin only",
+    "기본 티어": "Base tier",
+    "관리자 고정": "Admin fixed",
+    "관리자 보호": "Admin protected",
+    "회원가입 불가": "Signup Closed",
+    "현재는 신규 회원가입을 받고 있지 않습니다.": "New signups are currently closed.",
+    "로그인으로 돌아가기": "Back to Login",
+    "관리자가 회원가입을 다시 열기 전까지 새 계정을 만들 수 없습니다.": "New accounts cannot be created until the administrator reopens signup.",
+}
 
 
-def html_page(title: str, body: str) -> bytes:
+def html_page(title: str, body: str, language: str = "ko") -> bytes:
+    labels = TEXT.get(language, TEXT["en"])
+    language_options = "".join(
+        f'<option value="{code}" {"selected" if language == code else ""}>{html.escape(label)}</option>'
+        for code, label in LANGUAGE_OPTIONS.items()
+    )
     return f"""<!doctype html>
-<html lang="ko">
+<html lang="{html.escape(language)}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -442,6 +643,10 @@ def html_page(title: str, body: str) -> bytes:
     .error {{ color: var(--danger); font-weight: 700; }}
     .success {{ color: var(--accent); font-weight: 700; }}
     .nav {{ display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }}
+    .topbar {{ display: flex; justify-content: flex-end; margin-bottom: 14px; }}
+    .language-form {{ display: inline-flex; align-items: center; gap: 8px; }}
+    .language-form label {{ display: inline-flex; align-items: center; gap: 8px; }}
+    .language-form select {{ padding: 7px 10px; border-radius: 10px; background: #fff; }}
     code {{
       background: #f4f4f5;
       padding: 2px 6px;
@@ -457,6 +662,15 @@ def html_page(title: str, body: str) -> bytes:
 </head>
 <body>
   <div class="shell">
+    <div class="topbar">
+      <form class="language-form" method="post" action="/language">
+        <label>{html.escape(labels["language"])}
+          <select name="language" onchange="this.form.submit()">
+            {language_options}
+          </select>
+        </label>
+      </form>
+    </div>
     {body}
     <footer class="footer">FocusAway v{APP_VERSION}, {APP_COPYRIGHT}</footer>
   </div>
@@ -482,7 +696,7 @@ def html_page(title: str, body: str) -> bytes:
       if (!element) return;
       focusAwayCopyText(element.textContent || "").then(() => {{
         const original = button.textContent;
-        button.textContent = "복사됨";
+        button.textContent = {json.dumps(labels["copied"], ensure_ascii=False)};
         setTimeout(() => {{
           button.textContent = original;
         }}, 1400);
@@ -527,7 +741,7 @@ def html_page(title: str, body: str) -> bytes:
 
     async function focusAwayRefreshDashboard(button, section) {{
       if (!button) return;
-      const originalLabel = button.getAttribute("aria-label") || "새로고침";
+      const originalLabel = button.getAttribute("aria-label") || {json.dumps(labels["refresh"], ensure_ascii=False)};
       button.disabled = true;
       button.classList.add("is-loading");
       try {{
@@ -553,7 +767,7 @@ def html_page(title: str, body: str) -> bytes:
           if (root && payload.models_html) root.innerHTML = payload.models_html;
         }}
       }} catch (_error) {{
-        button.setAttribute("aria-label", "새로고침 실패");
+        button.setAttribute("aria-label", {json.dumps(labels["refresh_failed"], ensure_ascii=False)});
         setTimeout(() => button.setAttribute("aria-label", originalLabel), 1400);
       }} finally {{
         button.disabled = false;
@@ -610,6 +824,8 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
             return self.render_login()
         if parsed.path == "/login" and self.command == "POST":
             return self.handle_login()
+        if parsed.path == "/language" and self.command == "POST":
+            return self.handle_language_change()
         if parsed.path == "/terms":
             return self.render_terms()
         if parsed.path == "/privacy":
@@ -834,6 +1050,48 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
         csrf_cookie["focusaway_csrf"]["expires"] = "Thu, 01 Jan 1970 00:00:00 GMT"
         self.send_header("Set-Cookie", csrf_cookie.output(header="").strip())
 
+    def current_language(self) -> str:
+        cookie = SimpleCookie(self.headers.get("Cookie"))
+        saved = cookie.get("focusaway_language")
+        if saved and saved.value in LANGUAGE_OPTIONS:
+            return saved.value
+        accept_language = self.headers.get("Accept-Language", "")
+        return "ko" if accept_language.lower().startswith("ko") else "en"
+
+    def t(self, key: str, **values) -> str:
+        text = TEXT.get(self.current_language(), TEXT["en"]).get(key, key)
+        return text.format(**values)
+
+    def set_language_cookie(self, language: str) -> None:
+        cookie = SimpleCookie()
+        cookie["focusaway_language"] = language if language in LANGUAGE_OPTIONS else "en"
+        cookie["focusaway_language"]["path"] = "/"
+        cookie["focusaway_language"]["max-age"] = str(60 * 60 * 24 * 365 * 5)
+        cookie["focusaway_language"]["samesite"] = "Lax"
+        if self.request_is_secure():
+            cookie["focusaway_language"]["secure"] = True
+        self.send_header("Set-Cookie", cookie.output(header="").strip())
+
+    def handle_language_change(self) -> None:
+        if not self.is_same_origin_request():
+            return self.send_error(HTTPStatus.FORBIDDEN)
+        form = self.parse_body()
+        language = str(form.get("language", "")).strip()
+        if language not in LANGUAGE_OPTIONS:
+            language = "en"
+        referer = self.headers.get("Referer", "")
+        location = "/"
+        if referer:
+            parsed = urlparse(referer)
+            if parsed.netloc == (self.headers.get("X-Forwarded-Host") or self.headers.get("Host", "")):
+                location = parsed.path or "/"
+        self.send_response(302)
+        self.set_language_cookie(language)
+        self.send_header("Connection", "close")
+        self.send_header("Location", location)
+        self.end_headers()
+        self.close_connection = True
+
     def render_csrf_input(self) -> str:
         token = self.current_csrf_token()
         if not token:
@@ -870,18 +1128,19 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
         user = self.current_session_user()
         if user:
             return self.redirect("/dashboard")
-        signup_link = '<a href="/signup">회원가입</a>' if self.signup_open() else ""
+        signup_link = f'<a href="/signup">{html.escape(self.t("signup"))}</a>' if self.signup_open() else ""
+        subtitle = "FocusAway 웹 패널과 사용자 API 키를 관리할 수 있습니다." if self.current_language() == "ko" else "Manage the FocusAway web panel and user API keys."
         body = f"""
         <div class="hero">
-          <div><h1>로그인</h1><p>FocusAway 웹 패널과 사용자 API 키를 관리할 수 있습니다.</p></div>
+          <div><h1>{html.escape(self.t("login"))}</h1><p>{html.escape(subtitle)}</p></div>
           <div class="row">{signup_link}</div>
         </div>
         <section class="card">
           <form method="post" action="/login">
             {self.render_csrf_input()}
-            <label>아이디<input type="text" name="username" pattern="[a-z0-9]+" required></label>
-            <label>비밀번호<input type="password" name="password" required></label>
-            <button type="submit">로그인</button>
+            <label>{html.escape(self.t("username"))}<input type="text" name="username" pattern="[a-z0-9]+" required></label>
+            <label>{html.escape(self.t("password"))}<input type="password" name="password" required></label>
+            <button type="submit">{html.escape(self.t("login"))}</button>
           </form>
         </section>
         """
@@ -891,27 +1150,29 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
         if not self.signup_open():
             return self.render_signup_closed()
         error_html = f'<p class="error">{html.escape(error)}</p>' if error else ""
+        subtitle = "처음 생성되는 계정은 관리자 권한을 가집니다." if self.current_language() == "ko" else "The first account created becomes the administrator."
+        username_hint = "아이디는 영어 소문자와 숫자만 사용할 수 있습니다." if self.current_language() == "ko" else "Usernames may contain lowercase English letters and numbers only."
         body = f"""
         <div class="hero">
-          <div><h1>회원가입</h1><p>처음 생성되는 계정은 관리자 권한을 가집니다.</p></div>
-          <div class="row"><a href="/login">이미 계정이 있어요</a></div>
+          <div><h1>{html.escape(self.t("signup"))}</h1><p>{html.escape(subtitle)}</p></div>
+          <div class="row"><a href="/login">{html.escape(self.t("already_have_account"))}</a></div>
         </div>
         <section class="card">
           {error_html}
           <form method="post" action="/signup">
             {self.render_csrf_input()}
-            <label>아이디<input type="text" name="username" pattern="[a-z0-9]+" required></label>
-            <label>비밀번호<input type="password" name="password" minlength="8" required></label>
-            <button type="submit">계정 만들기</button>
+            <label>{html.escape(self.t("username"))}<input type="text" name="username" pattern="[a-z0-9]+" required></label>
+            <label>{html.escape(self.t("password"))}<input type="password" name="password" minlength="8" required></label>
+            <button type="submit">{html.escape(self.t("create_account"))}</button>
           </form>
-          <p class="hint form-note">아이디는 영어 소문자와 숫자만 사용할 수 있습니다.</p>
+          <p class="hint form-note">{html.escape(username_hint)}</p>
           <div class="row form-links">
-            <a href="/terms">이용약관 확인</a>
-            <a href="/privacy">개인정보처리방침 확인</a>
+            <a href="/terms">{html.escape(self.t("terms"))}</a>
+            <a href="/privacy">{html.escape(self.t("privacy"))}</a>
           </div>
         </section>
         """
-        self.respond_html("회원가입", body)
+        self.respond_html(self.t("signup"), body)
 
     def render_signup_closed(self) -> None:
         body = """
@@ -955,27 +1216,59 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
 
     def render_login(self, error: str = "") -> None:
         error_html = f'<p class="error">{html.escape(error)}</p>' if error else ""
-        signup_link = '<a href="/signup">회원가입</a>' if self.signup_open() else ""
+        signup_link = f'<a href="/signup">{html.escape(self.t("signup"))}</a>' if self.signup_open() else ""
+        subtitle = "FocusAway 웹 패널과 사용자 API 키를 관리할 수 있습니다." if self.current_language() == "ko" else "Manage the FocusAway web panel and user API keys."
         body = f"""
         <div class="hero">
-          <div><h1>로그인</h1><p>FocusAway 웹 패널과 사용자 API 키를 관리할 수 있습니다.</p></div>
+          <div><h1>{html.escape(self.t("login"))}</h1><p>{html.escape(subtitle)}</p></div>
           <div class="row">{signup_link}</div>
         </div>
         <section class="card">
           {error_html}
           <form method="post" action="/login">
-            <label>아이디<input type="text" name="username" pattern="[a-z0-9]+" required></label>
-            <label>비밀번호<input type="password" name="password" required></label>
-            <button type="submit">로그인</button>
+            <label>{html.escape(self.t("username"))}<input type="text" name="username" pattern="[a-z0-9]+" required></label>
+            <label>{html.escape(self.t("password"))}<input type="password" name="password" required></label>
+            <button type="submit">{html.escape(self.t("login"))}</button>
           </form>
         </section>
         """
-        self.respond_html("로그인", body)
+        self.respond_html(self.t("login"), body)
 
     def render_terms(self) -> None:
         today = datetime.now().strftime("%Y-%m-%d")
         operator_name = html.escape(self.app.config.operator_name)
         contact_email = html.escape(self.app.config.contact_email or "미설정")
+        if self.current_language() == "en":
+            contact_email = html.escape(self.app.config.contact_email or "Not set")
+            body = f"""
+            <div class="hero">
+              <div><h1>Terms of Service</h1><p>Basic terms for the {html.escape(self.app.config.app_name)} service.</p></div>
+              <div class="row"><a href="/signup">Back to Sign Up</a></div>
+            </div>
+            <section class="card">
+              <p class="hint">Effective date: {today}</p>
+              <h2>1. Purpose</h2>
+              <p>These terms define the conditions, rights, obligations, and responsibilities between {operator_name} and users of {html.escape(self.app.config.app_name)}.</p>
+              <h2>2. Service</h2>
+              <p>The operator provides an AI model middleware service, including the web panel, per-user API keys, model access controls, and request balance management.</p>
+              <h2>3. Accounts</h2>
+              <p>Users become members by agreeing to these terms and the privacy policy and completing signup. Members must protect their account information and API keys.</p>
+              <h2>4. Prohibited Conduct</h2>
+              <p>Users must not violate applicable law, infringe others' rights, disrupt service stability, attempt unauthorized access, perform abnormal bulk calls, or interfere with operations.</p>
+              <h2>5. Restrictions</h2>
+              <p>The operator may restrict or terminate use if a member violates these terms, applicable law, or materially disrupts service operation.</p>
+              <h2>6. Account Deletion</h2>
+              <p>Regular members may delete their account from the web panel. Information required by law or internal policy may be retained for the required period.</p>
+              <h2>7. Disclaimer</h2>
+              <p>The operator is not responsible for failures caused by force majeure, system failures, external network issues, or third-party service outages, and does not guarantee output accuracy or fitness for a particular purpose.</p>
+              <h2>8. Changes</h2>
+              <p>The operator may revise these terms to reflect legal or service changes and will notify users through the web panel or another available channel.</p>
+              <h2>9. Contact</h2>
+              <p>Terms contact: {contact_email}</p>
+            </section>
+            """
+            self.respond_html("Terms of Service", body)
+            return
         body = f"""
         <div class="hero">
           <div><h1>이용약관</h1><p>{html.escape(self.app.config.app_name)} 서비스 기본 이용약관입니다.</p></div>
@@ -1010,6 +1303,42 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
         operator_name = html.escape(self.app.config.operator_name)
         contact_email = html.escape(self.app.config.contact_email or "미설정")
         contact_address = html.escape(self.app.config.contact_address or "미설정")
+        if self.current_language() == "en":
+            contact_email = html.escape(self.app.config.contact_email or "Not set")
+            contact_address = html.escape(self.app.config.contact_address or "Not set")
+            body = f"""
+            <div class="hero">
+              <div><h1>Privacy Policy</h1><p>How {html.escape(self.app.config.app_name)} handles personal information.</p></div>
+              <div class="row"><a href="/signup">Back to Sign Up</a></div>
+            </div>
+            <section class="card">
+              <p class="hint">Effective date: {today}</p>
+              <h2>1. Purpose of Processing</h2>
+              <p>{operator_name} processes personal information for user identification, login authentication, API key issuance, service delivery, access restriction management, support, security, and abuse prevention.</p>
+              <h2>2. Information Processed</h2>
+              <p>Required items include username, password hash, session information, per-user API key, and service usage records such as model usage, request time, and charged amount. Access logs and error logs may also be generated during operation.</p>
+              <h2>3. Retention Period</h2>
+              <p>Member information is retained until account deletion, unless applicable law requires a separate retention period.</p>
+              <h2>4. Third-Party Provision</h2>
+              <p>The operator does not provide personal information to third parties except where required by law or separately consented to by the user.</p>
+              <h2>5. Outsourcing</h2>
+              <p>The operator does not currently outsource personal information processing. Future outsourcing, if any, will be disclosed in this policy.</p>
+              <h2>6. User Rights</h2>
+              <p>Users may request access, correction, deletion, or suspension of processing through service features or the contact information below.</p>
+              <h2>7. Deletion</h2>
+              <p>Personal information is deleted without delay when the retention period ends or the processing purpose is fulfilled. Electronic files are deleted in a difficult-to-recover manner.</p>
+              <h2>8. Safeguards</h2>
+              <p>The operator applies reasonable safeguards, including password hashing, separate account API keys, access control, log retention, and minimal collection.</p>
+              <h2>9. Contact</h2>
+              <p>Operator: {operator_name}</p>
+              <p>Email: {contact_email}</p>
+              <p>Address: {contact_address}</p>
+              <h2>10. Changes</h2>
+              <p>This policy may be revised due to legal, service, or internal policy changes, and updates will be announced through the web panel or another available channel.</p>
+            </section>
+            """
+            self.respond_html("Privacy Policy", body)
+            return
         body = f"""
         <div class="hero">
           <div><h1>개인정보처리방침</h1><p>{html.escape(self.app.config.app_name)} 서비스의 개인정보 처리 기준입니다.</p></div>
@@ -1089,24 +1418,39 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
         usage_rows = "".join(
             f"<tr><td>{html.escape(item['model_id'])}</td><td>{html.escape(item['endpoint'])}</td><td>{item['cost']:.2f}</td><td>{html.escape(self.format_usage_timestamp(item['created_at']))}</td></tr>"
             for item in usage
-        ) or "<tr><td colspan='4'>아직 사용 내역이 없습니다.</td></tr>"
-        admin_link = '<a href="/admin">관리자 패널</a>' if user["is_admin"] else ""
+        ) or f"<tr><td colspan='4'>{html.escape(self.t('no_usage'))}</td></tr>"
+        admin_link = f'<a href="/admin">{html.escape(self.t("admin_panel"))}</a>' if user["is_admin"] else ""
+        dashboard_subtitle = (
+            f"{user['username']}님, 현재 사용 가능한 모델과 계정 상태를 확인할 수 있습니다."
+            if self.current_language() == "ko"
+            else f"{user['username']}, you can review your available models and account status."
+        )
+        api_hint = (
+            "대부분의 OpenAI 호환 프론트엔드는 위 첫 번째 주소를 입력하면 내부적으로 /v1를 붙여 사용합니다."
+            if self.current_language() == "ko"
+            else "Most OpenAI-compatible frontends add /v1 internally when you enter the first URL above."
+        )
+        delete_confirm = (
+            "정말로 계정을 탈퇴하시겠습니까? 이 작업은 되돌릴 수 없습니다."
+            if self.current_language() == "ko"
+            else "Are you sure you want to delete your account? This cannot be undone."
+        )
         delete_account_form = ""
         if not user["is_admin"]:
             delete_account_form = f"""
-          <form method="post" action="/account/delete" onsubmit="return confirm('정말로 계정을 탈퇴하시겠습니까? 이 작업은 되돌릴 수 없습니다.');">
+          <form method="post" action="/account/delete" onsubmit="return confirm({html.escape(json.dumps(delete_confirm))});">
             {self.render_csrf_input()}
-            <button class="secondary" type="submit">계정 탈퇴</button>
+            <button class="secondary" type="submit">{html.escape(self.t("delete_account"))}</button>
           </form>
           """
         account_actions = f"""
         <section class="card">
-          <h2>계정 관리</h2>
+          <h2>{html.escape(self.t("account"))}</h2>
           <form method="post" action="/account/password">
             {self.render_csrf_input()}
-            <label>현재 비밀번호<input type="password" name="current_password" required></label>
-            <label>새 비밀번호<input type="password" name="new_password" minlength="8" required></label>
-            <button type="submit">비밀번호 변경</button>
+            <label>{html.escape(self.t("current_password"))}<input type="password" name="current_password" required></label>
+            <label>{html.escape(self.t("new_password"))}<input type="password" name="new_password" minlength="8" required></label>
+            <button type="submit">{html.escape(self.t("change_password"))}</button>
           </form>
           {delete_account_form}
         </section>
@@ -1114,67 +1458,67 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
         body = f"""
         <section class="hero">
           <div class="hero-copy">
-            <h1>대시보드</h1>
-            <p>{html.escape(user['username'])}님, 현재 사용 가능한 모델과 계정 상태를 확인할 수 있습니다.</p>
+            <h1>{html.escape(self.t("dashboard"))}</h1>
+            <p>{html.escape(dashboard_subtitle)}</p>
           </div>
           <div class="row">
             {admin_link}
-            <form method="post" action="/logout">{self.render_csrf_input()}<button class="secondary" type="submit">로그아웃</button></form>
+            <form method="post" action="/logout">{self.render_csrf_input()}<button class="secondary" type="submit">{html.escape(self.t("logout"))}</button></form>
           </div>
         </section>
         <section class="grid">
           <article class="card">
             <div class="section-head">
               <div id="dashboard-quota-heading" class="section-head-main">{self.render_dashboard_quota_heading(data["user"])}</div>
-              <button class="icon-btn" type="button" aria-label="남은 프리미엄 요청 새로고침" onclick="focusAwayRefreshDashboard(this, 'quota')">{self.refresh_icon_svg()}</button>
+              <button class="icon-btn" type="button" aria-label="{html.escape(self.t("refresh"))}" onclick="focusAwayRefreshDashboard(this, 'quota')">{self.refresh_icon_svg()}</button>
             </div>
             <div id="dashboard-quota-content">{self.render_dashboard_quota_content(data, usage_chart)}</div>
           </article>
           <article class="card">
-            <h2>내 전용 API 키</h2>
+            <h2>{html.escape(self.t("my_api_key"))}</h2>
             <div class="stack">
               <div>
-                <p class="hint">API 키</p>
+                <p class="hint">{html.escape(self.t("api_key"))}</p>
                 <div class="copy-row copy-row-nowrap">
                   <code id="user-api-key">{html.escape(user['api_key'])}</code>
-                  <button class="copy-btn" type="button" onclick="focusAwayCopyFromElement('user-api-key', this)">복사</button>
+                  <button class="copy-btn" type="button" onclick="focusAwayCopyFromElement('user-api-key', this)">{html.escape(self.t("copy"))}</button>
                 </div>
               </div>
               <div>
-                <p class="hint">프론트엔드 입력용 API 주소</p>
+                <p class="hint">{html.escape(self.t("api_base"))}</p>
                 <div class="copy-row copy-row-nowrap">
-                  <code id="user-api-base" data-current-origin data-path-suffix="">불러오는 중...</code>
-                  <button class="copy-btn" type="button" onclick="focusAwayCopyFromElement('user-api-base', this)">복사</button>
+                  <code id="user-api-base" data-current-origin data-path-suffix="">{html.escape(self.t("loading"))}</code>
+                  <button class="copy-btn" type="button" onclick="focusAwayCopyFromElement('user-api-base', this)">{html.escape(self.t("copy"))}</button>
                 </div>
               </div>
               <div>
-                <p class="hint">OpenAI 호환 API 루트</p>
+                <p class="hint">{html.escape(self.t("api_root"))}</p>
                 <div class="copy-row copy-row-nowrap">
-                  <code id="user-api-v1-base" data-current-origin data-path-suffix="/v1">불러오는 중...</code>
-                  <button class="copy-btn" type="button" onclick="focusAwayCopyFromElement('user-api-v1-base', this)">복사</button>
+                  <code id="user-api-v1-base" data-current-origin data-path-suffix="/v1">{html.escape(self.t("loading"))}</code>
+                  <button class="copy-btn" type="button" onclick="focusAwayCopyFromElement('user-api-v1-base', this)">{html.escape(self.t("copy"))}</button>
                 </div>
               </div>
             </div>
-            <p>대부분의 OpenAI 호환 프론트엔드는 위 첫 번째 주소를 입력하면 내부적으로 <code>/v1</code>를 붙여 사용합니다.</p>
-            <form method="post" action="/account/api-key/rotate">{self.render_csrf_input()}<button type="submit">API 키 재발급</button></form>
+            <p>{html.escape(api_hint).replace('/v1', '<code>/v1</code>')}</p>
+            <form method="post" action="/account/api-key/rotate">{self.render_csrf_input()}<button type="submit">{html.escape(self.t("rotate_api_key"))}</button></form>
           </article>
         </section>
         <section class="card">
           <div class="section-head">
-            <h2>모델 목록</h2>
-            <button class="icon-btn" type="button" aria-label="사용 가능한 모델 새로고침" onclick="focusAwayRefreshDashboard(this, 'models')">{self.refresh_icon_svg()}</button>
+            <h2>{html.escape(self.t("models"))}</h2>
+            <button class="icon-btn" type="button" aria-label="{html.escape(self.t("refresh"))}" onclick="focusAwayRefreshDashboard(this, 'models')">{self.refresh_icon_svg()}</button>
           </div>
           <div id="dashboard-models-content">{self.render_dashboard_models_content(data["models"], usage_series_hourly, model_usage_series)}</div>
         </section>
         <section class="card">
-          <h2>최근 사용 내역</h2>
+          <h2>{html.escape(self.t("recent_usage"))}</h2>
           <div class="table-wrap">
-            <table><thead><tr><th>모델</th><th>엔드포인트</th><th>비용</th><th>시각</th></tr></thead><tbody>{usage_rows}</tbody></table>
+            <table><thead><tr><th>{html.escape(self.t("model"))}</th><th>{html.escape(self.t("endpoint"))}</th><th>{html.escape(self.t("cost"))}</th><th>{html.escape(self.t("time"))}</th></tr></thead><tbody>{usage_rows}</tbody></table>
           </div>
         </section>
         {account_actions}
         """
-        self.respond_html("대시보드", body)
+        self.respond_html(self.t("dashboard"), body)
 
     def handle_dashboard_refresh(self) -> None:
         user = self.require_session_user()
@@ -1195,10 +1539,10 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
 
     def render_dashboard_quota_heading(self, user: dict) -> str:
         if user["is_admin"]:
-            return "<h2>관리자 권한</h2>"
-        tier_name = (user.get("tier_name") or "").strip() or "미지정"
+            return f"<h2>{html.escape(self.t('admin_privileges'))}</h2>"
+        tier_name = (user.get("tier_name") or "").strip() or self.t("unassigned")
         return (
-            "<h2>남은 프리미엄 요청</h2>"
+            f"<h2>{html.escape(self.t('remaining_premium'))}</h2>"
             f"<span class=\"pill\">{html.escape(tier_name)}</span>"
         )
 
@@ -1215,16 +1559,21 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
     def render_dashboard_quota_content(self, data: dict, usage_chart: str) -> str:
         user = data["user"]
         if user["is_admin"]:
-            return (
-                "<div class=\"metric\">Unlimited</div>"
+            admin_text = (
                 "<p>관리자 계정은 모든 모델을 프리미엄 요청 차감 없이 사용할 수 있습니다.</p>"
                 "<p>관리자 계정에는 주간 잔액과 보너스 잔액이 적용되지 않습니다.</p>"
+                if self.current_language() == "ko"
+                else "<p>Admin accounts can use all models without premium-request charges.</p><p>Weekly and bonus balances do not apply to admin accounts.</p>"
+            )
+            return (
+                f"<div class=\"metric\">{html.escape(self.t('unlimited'))}</div>"
+                f"{admin_text}"
             )
         return (
             f"<div class=\"metric\">{user['weekly_balance'] + user['bonus_balance']:.2f}</div>"
-            f"<p>주간 잔액: {user['weekly_balance']:.2f}</p>"
-            f"<p>보너스 잔액: {user['bonus_balance']:.2f}</p>"
-            f"<p>내 주간 충전량: {data['weekly_quota']:.2f}</p>"
+            f"<p>{html.escape(self.t('weekly_balance'))}: {user['weekly_balance']:.2f}</p>"
+            f"<p>{html.escape(self.t('bonus_balance'))}: {user['bonus_balance']:.2f}</p>"
+            f"<p>{html.escape(self.t('weekly_quota'))}: {data['weekly_quota']:.2f}</p>"
             f"{usage_chart}"
         )
 
@@ -1245,15 +1594,15 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
                 f"{self.render_model_kind_badge(self.effective_model_kind(model))}"
                 f"</div>"
                 f"<div class=\"model-card-main\">"
-                f"<div class=\"model-meta\"><span class=\"model-meta-label\">컨텍스트 윈도우</span><span class=\"model-meta-value\">{self.format_token_count(self.effective_model_limit(model, 'context_window', 'custom_context_window'))}</span></div>"
-                f"<div class=\"model-meta\"><span class=\"model-meta-label\">출력 토큰 한도</span><span class=\"model-meta-value\">{self.format_token_count(self.effective_model_limit(model, 'max_output_tokens', 'custom_max_output_tokens'))}</span></div>"
-                f"<div class=\"model-meta\"><span class=\"model-meta-label\">1회 비용</span><span class=\"model-meta-value\">{float(model['cost_per_request']):.2f}</span></div>"
+                f"<div class=\"model-meta\"><span class=\"model-meta-label\">{html.escape(self.t('context_window'))}</span><span class=\"model-meta-value\">{self.format_token_count(self.effective_model_limit(model, 'context_window', 'custom_context_window'))}</span></div>"
+                f"<div class=\"model-meta\"><span class=\"model-meta-label\">{html.escape(self.t('output_token_limit'))}</span><span class=\"model-meta-value\">{self.format_token_count(self.effective_model_limit(model, 'max_output_tokens', 'custom_max_output_tokens'))}</span></div>"
+                f"<div class=\"model-meta\"><span class=\"model-meta-label\">{html.escape(self.t('cost_per_request'))}</span><span class=\"model-meta-value\">{float(model['cost_per_request']):.2f}</span></div>"
                 f"{self.render_model_calls_chart(model_usage_series.get(model['model_id'], []), usage_series_hourly, max_model_calls, model['model_id'])}"
                 f"</div>"
                 f"</article>"
             )
             for model in models
-        ) or "<p>아직 동기화된 모델이 없습니다.</p>"
+        ) or f"<p>{html.escape(self.t('no_models'))}</p>"
         return f'<div class="model-grid">{model_cards}</div>'
 
     def refresh_icon_svg(self) -> str:
@@ -1310,14 +1659,14 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
     def render_model_access_badge(self, model: dict) -> str:
         minimum_tier_name = (model.get("minimum_tier_name") or "").strip()
         if minimum_tier_name:
-            return f'<span class="model-access-badge">{html.escape(minimum_tier_name)} 이상</span>'
+            return f'<span class="model-access-badge">{html.escape(self.t("tier_or_higher", name=minimum_tier_name))}</span>'
         return f'<span class="model-access-badge">{html.escape(self.admin_tier_label())}</span>'
 
     def render_model_copy_button(self, display_name: str) -> str:
         encoded_name = html.escape(json.dumps(str(display_name)))
         return (
             f'<button class="model-copy-btn" type="button" '
-            f'aria-label="모델 이름 복사" title="모델 이름 복사" '
+            f'aria-label="{html.escape(self.t("model_name_copy"))}" title="{html.escape(self.t("model_name_copy"))}" '
             f'onclick="focusAwayCopyWithFlash({encoded_name}, this)">{self.copy_icon_svg()}</button>'
         )
 
@@ -1374,7 +1723,7 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
         polyline_points = " ".join(f"{x:.2f},{y:.2f}" for x, y, _ in points)
         area_points = f"{padding_left:.2f},{padding_top + usable_height:.2f} " + polyline_points + f" {padding_left + usable_width:.2f},{padding_top + usable_height:.2f}"
         circles = "".join(
-            f'<circle class="model-chart-point" cx="{x:.2f}" cy="{y:.2f}" r="3"><title>{html.escape(usage_series[index]["label"])}: {count}회</title></circle>'
+            f'<circle class="model-chart-point" cx="{x:.2f}" cy="{y:.2f}" r="3"><title>{html.escape(usage_series[index]["label"])}: {count}</title></circle>'
             for index, (x, y, count) in enumerate(points)
         )
         grid_lines = "".join(
@@ -1408,11 +1757,11 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
         return f"""
         <div class="model-chart">
           <div class="model-chart-summary">
-            <span>최근 24시간 호출 횟수</span>
-            <span>총 {total_calls}회</span>
+            <span>{html.escape(self.t("recent_24h_calls"))}</span>
+            <span>{html.escape(self.t("total_calls", count=total_calls))}</span>
           </div>
           <svg viewBox="0 0 {width} {height}" preserveAspectRatio="none" aria-labelledby="model-chart-title-{safe_chart_id}">
-            <title id="model-chart-title-{safe_chart_id}">최근 24시간 호출 횟수</title>
+            <title id="model-chart-title-{safe_chart_id}">{html.escape(self.t("recent_24h_calls"))}</title>
             {grid_lines}
             <polygon class="model-chart-area" points="{area_points}"></polygon>
             <polyline class="model-chart-line" points="{polyline_points}"></polyline>
@@ -1482,7 +1831,7 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
         <div class="chart-panel" id="{chart_id}">
           <div class="chart-summary">
             <span>{html.escape(title)}</span>
-            <span>합계 {total:.2f}</span>
+            <span>{'합계' if self.current_language() == 'ko' else 'Total'} {total:.2f}</span>
           </div>
           <svg viewBox="0 0 {width} {height}" preserveAspectRatio="none" aria-label="{html.escape(title)}">
             {grid_lines}
@@ -1497,13 +1846,15 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
 
     def render_usage_chart_switcher(self, hourly_series: list[dict], daily_series: list[dict]) -> str:
         chart_id = "usage-chart-switcher"
-        hourly_panel = self.render_usage_chart(hourly_series, "최근 24시간 프리미엄 요청 사용량", "usage-chart-24h")
-        daily_panel = self.render_usage_chart(daily_series, "최근 7일 프리미엄 요청 사용량", "usage-chart-7d")
+        hourly_title = "최근 24시간 프리미엄 요청 사용량" if self.current_language() == "ko" else "Premium request usage in the last 24h"
+        daily_title = "최근 7일 프리미엄 요청 사용량" if self.current_language() == "ko" else "Premium request usage in the last 7 days"
+        hourly_panel = self.render_usage_chart(hourly_series, hourly_title, "usage-chart-24h")
+        daily_panel = self.render_usage_chart(daily_series, daily_title, "usage-chart-7d")
         return f"""
         <div class="chart" id="{chart_id}">
           <div class="chart-tabs">
-            <button class="chart-tab" type="button" onclick="focusAwaySelectChart('{chart_id}', 'usage-chart-24h', this)" style="background: var(--accent); color: white;">24시간</button>
-            <button class="chart-tab" type="button" onclick="focusAwaySelectChart('{chart_id}', 'usage-chart-7d', this)">7일</button>
+            <button class="chart-tab" type="button" onclick="focusAwaySelectChart('{chart_id}', 'usage-chart-24h', this)" style="background: var(--accent); color: white;">{'24시간' if self.current_language() == 'ko' else '24h'}</button>
+            <button class="chart-tab" type="button" onclick="focusAwaySelectChart('{chart_id}', 'usage-chart-7d', this)">{'7일' if self.current_language() == 'ko' else '7d'}</button>
           </div>
           {hourly_panel}
           {daily_panel.replace('class="chart-panel"', 'class="chart-panel" hidden', 1)}
@@ -1513,11 +1864,11 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
     def render_tier_options(self, tiers: list[dict], selected_tier_id, include_admin_only: bool = False) -> str:
         options = []
         if include_admin_only:
-            options.append(f"<option value=\"\" {'selected' if selected_tier_id in (None, '', 0, '0') else ''}>관리자</option>")
+            options.append(f"<option value=\"\" {'selected' if selected_tier_id in (None, '', 0, '0') else ''}>{html.escape(self.admin_tier_label())}</option>")
         selected_text = str(selected_tier_id) if selected_tier_id not in (None, "") else ""
         for tier in tiers:
             selected = "selected" if selected_text == str(tier["id"]) else ""
-            options.append(f"<option value=\"{tier['id']}\" {selected}>{html.escape(tier['name'])} 이상</option>")
+            options.append(f"<option value=\"{tier['id']}\" {selected}>{html.escape(self.t('tier_or_higher', name=tier['name']))}</option>")
         return "".join(options)
 
     def render_exact_tier_options(self, tiers: list[dict], selected_tier_id) -> str:
@@ -1528,7 +1879,7 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
         )
 
     def admin_tier_label(self) -> str:
-        return "관리자"
+        return self.t("admin")
 
     def render_admin(self) -> None:
         user = self.require_admin()
@@ -1547,8 +1898,8 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
               <td>{html.escape(row['username'])}</td>
               <td>{html.escape(self.admin_tier_label() if row['is_admin'] else (row['tier_name'] or '-'))}</td>
               <td>{self.render_user_tier_control(row, tiers)}</td>
-              <td>{'관리자' if row['is_admin'] else '회원'}</td>
-              <td>{'정지됨' if row['is_suspended'] else '정상'}</td>
+              <td>{html.escape(self.t('admin') if row['is_admin'] else self.t('member'))}</td>
+              <td>{html.escape(self.t('suspended') if row['is_suspended'] else self.t('normal'))}</td>
               <td>{html.escape(row['last_seen_ip'] or '-')}</td>
               <td>{'-' if row['is_admin'] else f"{row['weekly_balance']:.2f}"}</td>
               <td>{'-' if row['is_admin'] else f"{row['bonus_balance']:.2f}"}</td>
@@ -1556,27 +1907,32 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
             </tr>
             """
             for row in snapshot["users"]
-        ) or "<tr><td colspan='10'>회원이 없습니다.</td></tr>"
+        ) or f"<tr><td colspan='10'>{html.escape('회원이 없습니다.' if self.current_language() == 'ko' else 'No users.')}</td></tr>"
         admin_tier_row = f"""
             <tr>
               <td>
                 <input type="text" value="{html.escape(self.admin_tier_label())}" disabled style="width: 100%;">
               </td>
-              <td>고정</td>
+              <td>{html.escape(self.t('fixed'))}</td>
               <td>-</td>
-              <td><span class="hint">관리자 전용</span></td>
+              <td><span class="hint">{html.escape(self.t('admin_only'))}</span></td>
             </tr>
         """
         tier_row_parts = []
         for tier in tiers:
             if tier["is_system"]:
-                tier_action = '<span class="hint">기본 티어</span>'
+                tier_action = f'<span class="hint">{html.escape(self.t("base_tier"))}</span>'
             else:
+                delete_confirm = (
+                    "이 티어를 삭제하시겠습니까? 소속 회원과 모델 설정은 인접 티어로 이동됩니다."
+                    if self.current_language() == "ko"
+                    else "Delete this tier? Assigned users and model settings will move to a neighboring tier."
+                )
                 tier_action = f"""
-                  <form method="post" action="/admin/tiers/delete" onsubmit="return confirm('이 티어를 삭제하시겠습니까? 소속 회원과 모델 설정은 인접 티어로 이동됩니다.');">
+                  <form method="post" action="/admin/tiers/delete" onsubmit="return confirm({html.escape(json.dumps(delete_confirm))});">
                     {self.render_csrf_input()}
                     <input type="hidden" name="tier_id" value="{tier['id']}">
-                    <button class="icon-btn" type="submit" aria-label="티어 삭제" title="삭제">{self.trash_icon_svg()}</button>
+                    <button class="icon-btn" type="submit" aria-label="{html.escape('티어 삭제' if self.current_language() == 'ko' else 'Delete tier')}" title="{html.escape('삭제' if self.current_language() == 'ko' else 'Delete')}">{self.trash_icon_svg()}</button>
                   </form>
                 """
             tier_row_parts.append(
@@ -1596,13 +1952,13 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
                     {self.render_csrf_input()}
                     <input type="hidden" name="tier_id" value="{tier['id']}">
                     <input type="hidden" name="direction" value="up">
-                    <button class="icon-btn" type="submit" aria-label="티어 위로 이동" title="위로">{self.arrow_up_icon_svg()}</button>
+                    <button class="icon-btn" type="submit" aria-label="{html.escape('티어 위로 이동' if self.current_language() == 'ko' else 'Move tier up')}" title="{html.escape('위로' if self.current_language() == 'ko' else 'Up')}">{self.arrow_up_icon_svg()}</button>
                   </form>
                   <form method="post" action="/admin/tiers/move">
                     {self.render_csrf_input()}
                     <input type="hidden" name="tier_id" value="{tier['id']}">
                     <input type="hidden" name="direction" value="down">
-                    <button class="icon-btn" type="submit" aria-label="티어 아래로 이동" title="아래로">{self.arrow_down_icon_svg()}</button>
+                    <button class="icon-btn" type="submit" aria-label="{html.escape('티어 아래로 이동' if self.current_language() == 'ko' else 'Move tier down')}" title="{html.escape('아래로' if self.current_language() == 'ko' else 'Down')}">{self.arrow_down_icon_svg()}</button>
                   </form>
                   {tier_action}
                 </div>
@@ -1611,12 +1967,21 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
             """
             )
         tier_rows = "".join(tier_row_parts)
-        tier_rows = admin_tier_row + (tier_rows or "<tr><td colspan='4'>티어가 없습니다.</td></tr>")
+        tier_rows = admin_tier_row + (tier_rows or f"<tr><td colspan='4'>{html.escape('티어가 없습니다.' if self.current_language() == 'ko' else 'No tiers.')}</td></tr>")
+        context_placeholder = (
+            "비우면 백엔드 기본값({value}) 사용"
+            if self.current_language() == "ko"
+            else "Blank uses backend default ({value})"
+        )
         model_cards = "".join(
             f"""
             <div class="card admin-model-card">
               <input type="hidden" name="model_id" value="{html.escape(model['model_id'])}">
               <h3>{html.escape(model['display_name'])}</h3>
+              <label>사용자에게 제공할 모델명
+                <input type="text" name="display_name" value="{html.escape(model['display_name'])}" required>
+              </label>
+              <p class="hint">백엔드 모델 ID: <code>{html.escape(model['model_id'])}</code></p>
               <label>모델 종류
                 <select name="custom_model_kind">
                   <option value="" {'selected' if not (model['custom_model_kind'] or '').strip() else ''}>서버 기본값</option>
@@ -1625,10 +1990,10 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
                 </select>
               </label>
               <label>커스텀 컨텍스트 한도
-                <input type="number" step="1" min="1" name="custom_context_window" value="{'' if model['custom_context_window'] is None else int(model['custom_context_window'])}" placeholder="비우면 백엔드 기본값({self.format_token_count(model['context_window'])}) 사용">
+                <input type="number" step="1" min="1" name="custom_context_window" value="{'' if model['custom_context_window'] is None else int(model['custom_context_window'])}" placeholder="{html.escape(context_placeholder.format(value=self.format_token_count(model['context_window'])))}">
               </label>
               <label>커스텀 출력 한도
-                <input type="number" step="1" min="1" name="custom_max_output_tokens" value="{'' if model['custom_max_output_tokens'] is None else int(model['custom_max_output_tokens'])}" placeholder="비우면 백엔드 기본값({self.format_token_count(model['max_output_tokens'])}) 사용">
+                <input type="number" step="1" min="1" name="custom_max_output_tokens" value="{'' if model['custom_max_output_tokens'] is None else int(model['custom_max_output_tokens'])}" placeholder="{html.escape(context_placeholder.format(value=self.format_token_count(model['max_output_tokens'])))}">
               </label>
               <label>1회 비용<input type="number" step="0.01" min="0" name="cost_per_request" value="{float(model['cost_per_request']):.2f}" required></label>
               <label>사용 가능 티어
@@ -1639,7 +2004,7 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
             </div>
             """
             for model in snapshot["models"]
-        ) or "<p>아직 동기화된 모델이 없습니다. 아래 버튼으로 새로고침해 주세요.</p>"
+        ) or f"<p>{html.escape(self.t('no_models_refresh'))}</p>"
         body = f"""
         <section class="hero">
           <div>
@@ -1655,8 +2020,8 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
               {self.render_csrf_input()}
               <label>회원가입 상태
                 <select name="signup_open">
-                  <option value="1" {'selected' if signup_open else ''}>열기</option>
-                  <option value="0" {'selected' if not signup_open else ''}>닫기</option>
+                  <option value="1" {'selected' if signup_open else ''}>{html.escape('열기' if self.current_language() == 'ko' else 'Open')}</option>
+                  <option value="0" {'selected' if not signup_open else ''}>{html.escape('닫기' if self.current_language() == 'ko' else 'Closed')}</option>
                 </select>
               </label>
               <div class="row">
@@ -1664,7 +2029,7 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
                 <label for="exclude-assistant-models" style="display: block;">모델명에 assistant가 포함된 모델은 동기화 시 제외</label>
               </div>
               {self.render_auto_promotion_settings(auto_promotion, promotion_target_tiers)}
-              <button type="submit">저장</button>
+              <button type="submit">{html.escape(self.t('save'))}</button>
             </form>
           </article>
           <article class="card">
@@ -1723,6 +2088,8 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
     def render_auto_promotion_settings(self, settings: dict, tiers: list[dict]) -> str:
         if not tiers:
             return ""
+        day_label = "일" if self.current_language() == "ko" else "days"
+        hour_label = "시간" if self.current_language() == "ko" else "hours"
         target_value = "" if settings.get("target_tier_id") in (None, "") else str(settings["target_tier_id"])
         target_options = "".join(
             f"<option value=\"{tier['id']}\" {'selected' if target_value == str(tier['id']) else ''}>{html.escape(tier['name'])}</option>"
@@ -1740,8 +2107,8 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
               </div>
               <div class="row">
                 <input type="number" min="1" step="1" name="auto_promo_time_value" value="{html.escape(str(settings.get('time_value', '7')))}" style="width: 8rem;">
-                <label class="pill"><input type="radio" name="auto_promo_time_unit" value="days" {'checked' if settings.get('time_unit') != 'hours' else ''}>일</label>
-                <label class="pill"><input type="radio" name="auto_promo_time_unit" value="hours" {'checked' if settings.get('time_unit') == 'hours' else ''}>시간</label>
+                <label class="pill"><input type="radio" name="auto_promo_time_unit" value="days" {'checked' if settings.get('time_unit') != 'hours' else ''}>{html.escape(day_label)}</label>
+                <label class="pill"><input type="radio" name="auto_promo_time_unit" value="hours" {'checked' if settings.get('time_unit') == 'hours' else ''}>{html.escape(hour_label)}</label>
               </div>
             </div>
             <div class="stack">
@@ -1766,7 +2133,7 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
 
     def render_user_tier_control(self, row, tiers: list[dict]) -> str:
         if row["is_admin"]:
-            return '<span class="hint">관리자 고정</span>'
+            return f'<span class="hint">{html.escape(self.t("admin_fixed"))}</span>'
         return f"""
         <form method="post" action="/admin/users/tier" class="row">
           {self.render_csrf_input()}
@@ -1774,27 +2141,32 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
           <select name="tier_id" style="min-width: 9rem;">
             {self.render_exact_tier_options(tiers, row['tier_id'])}
           </select>
-          <button class="secondary" type="submit">적용</button>
+          <button class="secondary" type="submit">{html.escape(self.t("apply"))}</button>
         </form>
         """
 
     def render_user_admin_actions(self, row, tiers: list[dict]) -> str:
         if row["is_admin"]:
-            return '<span class="hint">관리자 보호</span>'
-        suspend_label = "정지 해제" if row["is_suspended"] else "정지"
+            return f'<span class="hint">{html.escape(self.t("admin_protected"))}</span>'
+        suspend_label = self.t("unsuspend") if row["is_suspended"] else self.t("suspend")
         suspend_value = "0" if row["is_suspended"] else "1"
+        delete_confirm = (
+            "이 회원을 강퇴하시겠습니까? 이 작업은 되돌릴 수 없습니다."
+            if self.current_language() == "ko"
+            else "Delete this user? This cannot be undone."
+        )
         return f"""
         <div class="row">
           <form method="post" action="/admin/users/suspend">
             {self.render_csrf_input()}
             <input type="hidden" name="user_id" value="{row['id']}">
             <input type="hidden" name="suspended" value="{suspend_value}">
-            <button class="secondary" type="submit">{suspend_label}</button>
+            <button class="secondary" type="submit">{html.escape(suspend_label)}</button>
           </form>
-          <form method="post" action="/admin/users/delete" onsubmit="return confirm('이 회원을 강퇴하시겠습니까? 이 작업은 되돌릴 수 없습니다.');">
+          <form method="post" action="/admin/users/delete" onsubmit="return confirm({html.escape(json.dumps(delete_confirm))});">
             {self.render_csrf_input()}
             <input type="hidden" name="user_id" value="{row['id']}">
-            <button class="secondary" type="submit">강퇴</button>
+            <button class="secondary" type="submit">{html.escape(self.t("delete"))}</button>
           </form>
         </div>
         """
@@ -1970,17 +2342,30 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
             return [value]
 
         model_ids = ensure_list(form.get("model_id", []))
+        display_names = ensure_list(form.get("display_name", []))
         costs = ensure_list(form.get("cost_per_request", []))
         minimum_tier_ids = ensure_list(form.get("minimum_tier_id", []))
         custom_kinds = ensure_list(form.get("custom_model_kind", []))
         custom_contexts = ensure_list(form.get("custom_context_window", []))
         custom_outputs = ensure_list(form.get("custom_max_output_tokens", []))
         updates = []
+        public_names = set()
+        backend_ids = {str(model_id) for model_id in model_ids}
         for index, model_id in enumerate(model_ids):
             minimum_tier_id = self.parse_optional_tier_id(minimum_tier_ids[index] if index < len(minimum_tier_ids) else "")
+            display_name = str(display_names[index] if index < len(display_names) else model_id).strip() or str(model_id)
+            public_key = display_name.casefold()
+            if public_key in public_names:
+                self.respond_html("모델 정책 저장 실패", '<section class="card"><p class="error">사용자에게 제공할 모델명은 서로 달라야 합니다.</p></section>')
+                return
+            if display_name != str(model_id) and display_name in backend_ids:
+                self.respond_html("모델 정책 저장 실패", '<section class="card"><p class="error">공개 모델명은 다른 백엔드 모델 ID와 같을 수 없습니다.</p></section>')
+                return
+            public_names.add(public_key)
             updates.append(
                 {
                     "model_id": model_id,
+                    "display_name": display_name,
                     "cost_per_request": float(costs[index] if index < len(costs) else 0),
                     "access_mode": "tier" if minimum_tier_id is not None else "admin",
                     "minimum_tier_id": minimum_tier_id,
@@ -2134,7 +2519,7 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
         self.ensure_models_seeded()
         rows = self.app.db.accessible_models_for_user(bool(api_user["is_admin"]), api_user["tier_sort_order"])
         data = [
-            {"id": row["model_id"], "object": "model", "owned_by": self.app.config.app_name}
+            {"id": row["display_name"], "object": "model", "owned_by": self.app.config.app_name}
             for row in rows
         ]
         self.render_json({"object": "list", "data": data})
@@ -2163,10 +2548,12 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
         model_id = payload.get("model")
         if model_id:
             self.ensure_model_available(model_id)
-        policy = self.app.db.get_model_policy(model_id) if model_id else None
+        policy = self.app.db.get_model_policy_by_public_id(model_id) if model_id else None
         if not policy:
             return self.render_json({"error": {"message": "Model is not registered in FocusAway."}}, 400)
         self.enforce_output_token_limit(path, payload, policy)
+        if isinstance(payload, dict):
+            payload["model"] = policy["model_id"]
         if body and isinstance(payload, dict):
             body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
         if not api_user["is_admin"]:
@@ -2207,6 +2594,7 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
         if status >= 400:
             return self.render_json(self.upstream_error_payload(status), status)
         headers, response_body = self.coerce_non_stream_response(path, wants_stream, headers, response_body)
+        headers, response_body = self.rewrite_response_model_name(headers, response_body, policy["display_name"])
         self.send_response(status)
         self.apply_cors_headers()
         self.apply_common_security_headers()
@@ -2216,6 +2604,26 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
         self.wfile.write(response_body)
         if 200 <= status < 300 and policy["model_id"]:
             self.app.record_live_model_usage(policy["model_id"])
+
+    def rewrite_response_model_name(
+        self,
+        headers: dict[str, str],
+        response_body: bytes,
+        public_model_name: str,
+    ) -> tuple[dict[str, str], bytes]:
+        content_type = self.header_value(headers, "Content-Type", "")
+        if "application/json" not in content_type.lower():
+            return headers, response_body
+        try:
+            payload = json.loads(response_body.decode("utf-8") or "{}")
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            return headers, response_body
+        if isinstance(payload, dict) and "model" in payload:
+            payload["model"] = public_model_name
+            updated_headers = dict(headers)
+            updated_headers["Content-Type"] = "application/json; charset=utf-8"
+            return updated_headers, json.dumps(payload, ensure_ascii=False).encode("utf-8")
+        return headers, response_body
 
     def stream_proxy_response(self, path: str, body: bytes | None, model_id: str, api_user) -> None:
         status, headers, upstream_response = self.app.upstream.open_proxy(
@@ -2642,7 +3050,7 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
             print(f"FocusAway model auto-sync failed: {exc}")
 
     def ensure_model_available(self, model_id: str) -> None:
-        if self.app.db.get_model_policy(model_id):
+        if self.app.db.get_model_policy_by_public_id(model_id):
             return
         try:
             models = self.app.filter_upstream_models(self.app.upstream.fetch_models())
@@ -2652,7 +3060,12 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
             print(f"FocusAway model lookup sync failed for {model_id}: {exc}")
 
     def respond_html(self, title: str, body: str) -> None:
-        payload = html_page(title, body)
+        language = self.current_language()
+        if language == "en":
+            title = EN_REPLACEMENTS.get(title, title)
+            for source, target in sorted(EN_REPLACEMENTS.items(), key=lambda item: len(item[0]), reverse=True):
+                body = body.replace(source, target)
+        payload = html_page(title, body, language)
         self.send_response(200)
         self.maybe_refresh_csrf_cookie()
         self.apply_common_security_headers()

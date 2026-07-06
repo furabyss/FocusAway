@@ -972,7 +972,7 @@ class FocusAwayDB:
                     )
                     VALUES(?, ?, ?, 'tier', ?, ?, ?, 1, 1, ?)
                     ON CONFLICT(model_id) DO UPDATE SET
-                        display_name = excluded.display_name,
+                        display_name = model_policies.display_name,
                         model_kind = excluded.model_kind,
                         access_mode = model_policies.access_mode,
                         minimum_tier_id = model_policies.minimum_tier_id,
@@ -1017,10 +1017,11 @@ class FocusAwayDB:
                 conn.execute(
                     """
                     UPDATE model_policies
-                    SET cost_per_request = ?, members_allowed = ?, access_mode = ?, minimum_tier_id = ?, custom_model_kind = ?, custom_context_window = ?, custom_max_output_tokens = ?, updated_at = ?
+                    SET display_name = ?, cost_per_request = ?, members_allowed = ?, access_mode = ?, minimum_tier_id = ?, custom_model_kind = ?, custom_context_window = ?, custom_max_output_tokens = ?, updated_at = ?
                     WHERE model_id = ?
                     """,
                     (
+                        update.get("display_name") or update["model_id"],
                         round(float(update["cost_per_request"]), 2),
                         1 if update.get("access_mode") == "tier" else 0,
                         update.get("access_mode", "tier"),
@@ -1043,6 +1044,20 @@ class FocusAwayDB:
                 WHERE model_id = ?
                 """,
                 (model_id,),
+            ).fetchone()
+
+    def get_model_policy_by_public_id(self, public_model_id: str):
+        with self.connect() as conn:
+            return conn.execute(
+                """
+                SELECT model_policies.*, tiers.name AS minimum_tier_name, tiers.sort_order AS minimum_tier_sort_order
+                FROM model_policies
+                LEFT JOIN tiers ON tiers.id = model_policies.minimum_tier_id
+                WHERE model_id = ? OR display_name = ?
+                ORDER BY CASE WHEN display_name = ? THEN 0 ELSE 1 END
+                LIMIT 1
+                """,
+                (public_model_id, public_model_id, public_model_id),
             ).fetchone()
 
     def charge_request(self, user_id: int, model_id: str, endpoint: str, cost: float) -> tuple[bool, str]:
