@@ -291,6 +291,13 @@ class FocusAwayDB:
         return ""
 
     def _model_kind_value(self, model: dict) -> str:
+        output_modalities = self._model_metadata_text(
+            model,
+            ("output_modalities", "supported_output_modalities"),
+        ).lower()
+        if any(token in output_modalities for token in ("audio", "speech", "voice")):
+            return "TTS"
+
         explicit = self._model_metadata_text(
             model,
             (
@@ -303,6 +310,8 @@ class FocusAwayDB:
             ),
         ).lower()
         if explicit:
+            if any(token in explicit for token in ("tts", "text-to-speech", "speech", "voice", "audio")):
+                return "TTS"
             if any(token in explicit for token in ("vlm", "vision", "multimodal", "image")):
                 return "VLM"
             if any(token in explicit for token in ("llm", "text", "language")):
@@ -318,6 +327,8 @@ class FocusAwayDB:
             ),
         ).lower()
         if modality_text:
+            if "audio" in modality_text or "speech" in modality_text or "voice" in modality_text:
+                return "TTS"
             if "image" in modality_text or "vision" in modality_text:
                 return "VLM"
             if "text" in modality_text:

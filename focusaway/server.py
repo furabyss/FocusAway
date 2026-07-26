@@ -19,7 +19,7 @@ from .security import generate_token
 from .upstream import UpstreamClient
 
 
-APP_VERSION = "1.0.2"
+APP_VERSION = "1.0.3"
 APP_COPYRIGHT = "ⓒ 2026 Fur-Abyss."
 LANGUAGE_OPTIONS = {"ko": "한국어", "en": "English"}
 TEXT = {
@@ -784,10 +784,22 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
     DEFAULT_STREAM_CHUNK_SIZE = 1024
     PRIORITY_STREAM_CHUNK_SIZE = 256
+    BINARY_STREAM_CHUNK_SIZE = 64 * 1024
     STREAM_CAPABLE_PATHS = {
         "/v1/chat/completions",
         "/v1/completions",
         "/v1/responses",
+    }
+    BINARY_STREAM_PATHS = {
+        "/v1/audio/speech",
+    }
+    BILLABLE_PATHS = {
+        "/v1/chat/completions",
+        "/v1/completions",
+        "/v1/responses",
+        "/v1/embeddings",
+        "/v1/images/generations",
+        "/v1/audio/speech",
     }
 
     @property
@@ -1652,7 +1664,7 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
 
     def render_model_kind_badge(self, model_kind: str) -> str:
         kind = (model_kind or "").strip().upper()
-        if kind not in {"LLM", "VLM"}:
+        if kind not in {"LLM", "VLM", "TTS"}:
             return ""
         return f'<span class="model-kind">{html.escape(kind)}</span>'
 
@@ -1672,10 +1684,10 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
 
     def effective_model_kind(self, model) -> str:
         custom_kind = (model.get("custom_model_kind") or "").strip().upper()
-        if custom_kind in {"LLM", "VLM"}:
+        if custom_kind in {"LLM", "VLM", "TTS"}:
             return custom_kind
         base_kind = (model.get("model_kind") or "").strip().upper()
-        return base_kind if base_kind in {"LLM", "VLM"} else ""
+        return base_kind if base_kind in {"LLM", "VLM", "TTS"} else ""
 
     def effective_model_limit(self, model, default_key: str, custom_key: str):
         custom_value = model[custom_key]
@@ -1987,6 +1999,7 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
                   <option value="" {'selected' if not (model['custom_model_kind'] or '').strip() else ''}>서버 기본값</option>
                   <option value="LLM" {'selected' if (model['custom_model_kind'] or '').strip().upper() == 'LLM' else ''}>LLM</option>
                   <option value="VLM" {'selected' if (model['custom_model_kind'] or '').strip().upper() == 'VLM' else ''}>VLM</option>
+                  <option value="TTS" {'selected' if (model['custom_model_kind'] or '').strip().upper() == 'TTS' else ''}>TTS</option>
                 </select>
               </label>
               <label>커스텀 컨텍스트 한도
@@ -2379,7 +2392,7 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
 
     def normalize_custom_model_kind(self, value: str) -> str:
         kind = str(value).strip().upper()
-        return kind if kind in {"LLM", "VLM"} else ""
+        return kind if kind in {"LLM", "VLM", "TTS"} else ""
 
     def parse_optional_positive_int(self, value: str):
         text = str(value).strip()
@@ -2564,14 +2577,7 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
             if user_sort_order is None or int(user_sort_order) < int(required_sort_order):
                 return self.render_json({"error": {"message": "Your tier does not allow access to this model."}}, 403)
 
-        billable_paths = {
-            "/v1/chat/completions",
-            "/v1/completions",
-            "/v1/responses",
-            "/v1/embeddings",
-            "/v1/images/generations",
-        }
-        if self.command == "POST" and path in billable_paths:
+        if self.command == "POST" and path in self.BILLABLE_PATHS:
             ok, message = self.app.db.charge_request(
                 api_user["id"],
                 policy["model_id"],
@@ -2583,6 +2589,8 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
 
         if wants_stream and path in self.STREAM_CAPABLE_PATHS:
             return self.stream_proxy_response(path, body, policy["model_id"], api_user)
+        if self.command == "POST" and path in self.BINARY_STREAM_PATHS:
+            return self.stream_binary_response(path, body, policy["model_id"])
 
         status, headers, response_body = self.app.upstream.proxy(
             path,
@@ -2649,6 +2657,43 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
 
             while True:
                 chunk = upstream_response.read(chunk_size)
+                if not chunk:
+                    break
+                self.wfile.write(chunk)
+                self.wfile.flush()
+            if 200 <= status < 300 and model_id:
+                self.app.record_live_model_usage(model_id)
+        finally:
+            upstream_response.close()
+
+    def stream_binary_response(self, path: str, body: bytes | None, model_id: str) -> None:
+        request_headers = dict(self.headers)
+        if not self.header_value(request_headers, "Accept"):
+            request_headers["Accept"] = "audio/*"
+        status, headers, upstream_response = self.app.upstream.open_proxy(
+            path,
+            self.command,
+            body,
+            request_headers,
+            False,
+        )
+        try:
+            if status >= 400:
+                return self.render_json(self.upstream_error_payload(status), status)
+            self.send_response(status)
+            self.apply_cors_headers()
+            self.apply_common_security_headers()
+            self.send_header("Content-Type", self.header_value(headers, "Content-Type", "application/octet-stream"))
+            content_disposition = self.header_value(headers, "Content-Disposition")
+            if content_disposition:
+                self.send_header("Content-Disposition", content_disposition)
+                self.send_header("Access-Control-Expose-Headers", "Content-Disposition")
+            self.send_header("Connection", "close")
+            self.end_headers()
+            self.close_connection = True
+
+            while True:
+                chunk = upstream_response.read(self.BINARY_STREAM_CHUNK_SIZE)
                 if not chunk:
                     break
                 self.wfile.write(chunk)
