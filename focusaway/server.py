@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import html
+import ipaddress
 import json
 import re
 import time
@@ -10,18 +11,25 @@ from http import HTTPStatus
 from http.cookies import SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from threading import Lock
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, unquote, urlparse
 from zoneinfo import ZoneInfo
 
 from .config import AppConfig
-from .db import FocusAwayDB
+from .db import FocusAwayDB, SignupCooldownError
+from .network import ip_in_ranges
 from .security import generate_token
 from .upstream import UpstreamClient
 
 
-APP_VERSION = "1.0.3"
+APP_VERSION = "1.0.4"
 APP_COPYRIGHT = "ⓒ 2026 Fur-Abyss."
 LANGUAGE_OPTIONS = {"ko": "한국어", "en": "English"}
+
+
+class RequestError(ValueError):
+    def __init__(self, message: str, status: int = 400):
+        self.status = status
+        super().__init__(message)
 TEXT = {
     "ko": {
         "language": "언어:",
@@ -187,6 +195,10 @@ EN_REPLACEMENTS = {
     "지급": "Grant",
     "모델 정책": "Model Policies",
     "백엔드에서 모델 새로고침": "Refresh Models from Backend",
+    "기본 모델": "Default Model",
+    "설정 안 함": "Not configured",
+    "요청의 모델명이 비어 있거나 등록되지 않았을 때 사용할 모델입니다. 선택한 모델의 접근 티어와 비용 정책은 그대로 적용됩니다.": "Used when a request has a blank or unregistered model name. The selected model's tier access and cost policy still apply.",
+    "기본 모델은 현재 등록된 모델 중에서 선택해 주세요.": "Select the default model from the currently registered models.",
     "사용자에게 제공할 모델명": "Public model name",
     "백엔드 모델 ID": "Backend model ID",
     "모델 종류": "Model Kind",
@@ -274,8 +286,10 @@ def html_page(title: str, body: str, language: str = "ko") -> bytes:
       padding: 22px;
       box-shadow: 0 10px 30px rgba(24,24,27,0.05);
       margin-bottom: 18px;
+      min-width: 0;
     }}
     .grid {{ display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }}
+    .grid > * {{ min-width: 0; }}
     .card h2, .card h3 {{ margin: 0 0 14px; }}
     .metric {{ font-size: 2rem; font-weight: 700; }}
     .chart {{
@@ -508,9 +522,17 @@ def html_page(title: str, body: str, language: str = "ko") -> bytes:
     }}
     .admin-model-card h3 {{
       margin: 0;
+      overflow-wrap: anywhere;
     }}
     .admin-model-card label {{
       gap: 10px;
+    }}
+    .admin-model-card .hint,
+    .admin-model-card code {{
+      min-width: 0;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      word-break: break-word;
     }}
     .copy-row {{
       display: flex;
@@ -606,24 +628,40 @@ def html_page(title: str, body: str, language: str = "ko") -> bytes:
     .table-wrap {{
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
+      max-width: 100%;
     }}
     table {{ width: 100%; border-collapse: collapse; }}
+    .admin-tier-table {{ min-width: 460px; }}
+    .admin-tier-table .row {{ flex-wrap: nowrap; gap: 6px; }}
+    .member-table {{ min-width: 980px; }}
+    .member-table th, .member-table td {{ white-space: nowrap; }}
     th, td {{ text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--line); font-size: 0.96rem; }}
     th {{ color: var(--muted); font-weight: 700; }}
-    form {{ display: grid; gap: 14px; }}
-    label {{ display: grid; gap: 8px; font-size: 0.95rem; }}
+    form {{ display: grid; gap: 14px; min-width: 0; }}
+    label {{ display: grid; gap: 8px; min-width: 0; font-size: 0.95rem; }}
     input, button, select {{
       border-radius: 12px;
       border: 1px solid var(--line);
       padding: 11px 12px;
       font: inherit;
     }}
+    label > input:not([type="checkbox"]):not([type="radio"]),
+    label > select,
+    label > textarea {{
+      display: block;
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
+    }}
+    select {{ text-overflow: ellipsis; }}
     button {{
       background: var(--accent);
       color: white;
       border: 0;
       cursor: pointer;
       font-weight: 700;
+      max-width: 100%;
+      overflow-wrap: anywhere;
     }}
     button.secondary {{ background: var(--accent-soft); color: var(--ink); border: 1px solid var(--line); }}
     .row {{ display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }}
@@ -645,8 +683,8 @@ def html_page(title: str, body: str, language: str = "ko") -> bytes:
     .nav {{ display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }}
     .topbar {{ display: flex; justify-content: flex-end; margin-bottom: 14px; }}
     .language-form {{ display: inline-flex; align-items: center; gap: 8px; }}
-    .language-form label {{ display: inline-flex; align-items: center; gap: 8px; }}
-    .language-form select {{ padding: 7px 10px; border-radius: 10px; background: #fff; }}
+    .language-form label {{ display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }}
+    .language-form label > select {{ display: inline-block; width: auto; min-width: 96px; padding: 7px 10px; border-radius: 10px; background: #fff; }}
     code {{
       background: #f4f4f5;
       padding: 2px 6px;
@@ -654,8 +692,12 @@ def html_page(title: str, body: str, language: str = "ko") -> bytes:
       font-family: "SF Mono", "Menlo", monospace;
     }}
     @media (max-width: 720px) {{
+      .shell {{ padding: 24px 14px 48px; }}
       .hero {{ display: block; }}
       .hero h1 {{ font-size: 2rem; }}
+      .card {{ padding: 18px; border-radius: 18px; }}
+      .grid {{ grid-template-columns: minmax(0, 1fr); }}
+      .section-head {{ align-items: flex-start; flex-wrap: wrap; }}
       .model-card-main {{ grid-template-columns: 1fr; }}
     }}
   </style>
@@ -801,6 +843,7 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
         "/v1/images/generations",
         "/v1/audio/speech",
     }
+    SUPPORTED_PROXY_PATHS = frozenset(BILLABLE_PATHS)
 
     @property
     def app(self) -> "FocusAwayApp":
@@ -809,12 +852,16 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:
         try:
             self.route()
+        except RequestError as exc:
+            self.render_json({"error": {"message": str(exc)}}, exc.status)
         except ValueError as exc:
             self.render_json({"error": {"message": str(exc)}}, 413)
 
     def do_POST(self) -> None:
         try:
             self.route()
+        except RequestError as exc:
+            self.render_json({"error": {"message": str(exc)}}, exc.status)
         except ValueError as exc:
             self.render_json({"error": {"message": str(exc)}}, 413)
 
@@ -882,25 +929,52 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
             return self.handle_admin_user_suspend()
         if parsed.path == "/admin/users/delete" and self.command == "POST":
             return self.handle_admin_user_delete()
-        if parsed.path == "/v1/models":
-            return self.handle_models_api()
         if parsed.path.startswith("/v1/"):
-            return self.handle_proxy_api(parsed.path)
+            api_path = self.normalize_api_path(parsed.path)
+            if api_path == "/v1/models":
+                if self.command != "GET":
+                    return self.render_json({"error": {"message": "Method not allowed."}}, 405)
+                return self.handle_models_api()
+            return self.handle_proxy_api(api_path)
         self.send_error(HTTPStatus.NOT_FOUND)
 
     def parse_body(self) -> dict[str, str]:
-        length = int(self.headers.get("Content-Length", "0"))
-        if length > self.app.config.max_request_bytes:
-            raise ValueError("Request body too large.")
-        raw = self.rfile.read(length) if length else b""
+        raw = self.read_request_body()
         content_type = self.headers.get("Content-Type", "")
         if "application/json" in content_type:
-            return json.loads(raw.decode("utf-8") or "{}")
-        parsed = parse_qs(raw.decode("utf-8"), keep_blank_values=True)
+            try:
+                payload = json.loads(raw.decode("utf-8") or "{}")
+            except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+                raise RequestError("Request body must be valid JSON.") from exc
+            if not isinstance(payload, dict):
+                raise RequestError("Request body must be a JSON object.")
+            return payload
+        try:
+            decoded = raw.decode("utf-8")
+        except UnicodeDecodeError as exc:
+            raise RequestError("Request body must be UTF-8 encoded.") from exc
+        parsed = parse_qs(decoded, keep_blank_values=True)
         result = {}
         for key, values in parsed.items():
             result[key] = values if len(values) > 1 else values[0]
         return result
+
+    def read_request_body(self) -> bytes:
+        transfer_encoding = self.headers.get("Transfer-Encoding", "").strip().lower()
+        if transfer_encoding and transfer_encoding != "identity":
+            raise RequestError("Transfer-Encoding is not supported.")
+        raw_length = self.headers.get("Content-Length", "0").strip()
+        if not raw_length or "," in raw_length:
+            raise RequestError("Invalid Content-Length header.")
+        try:
+            length = int(raw_length)
+        except ValueError as exc:
+            raise RequestError("Invalid Content-Length header.") from exc
+        if length < 0:
+            raise RequestError("Invalid Content-Length header.")
+        if length > self.app.config.max_request_bytes:
+            raise RequestError("Request body too large.", 413)
+        return self.rfile.read(length) if length else b""
 
     def apply_cors_headers(self) -> None:
         origin = self.headers.get("Origin", "")
@@ -971,13 +1045,22 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
         return token.value if token else ""
 
     def request_is_secure(self) -> bool:
-        forwarded_proto = self.headers.get("X-Forwarded-Proto", "")
+        if not self.request_from_trusted_proxy():
+            return False
+        forwarded_proto = self.headers.get("X-Forwarded-Proto", "").split(",", 1)[0].strip()
         return forwarded_proto.lower() == "https"
 
+    def request_from_trusted_proxy(self) -> bool:
+        return ip_in_ranges(self.client_address[0], self.app.config.trusted_proxy_cidrs)
+
     def client_ip(self) -> str:
-        forwarded_for = self.headers.get("X-Forwarded-For", "")
+        forwarded_for = self.headers.get("X-Forwarded-For", "") if self.request_from_trusted_proxy() else ""
         if forwarded_for:
-            return forwarded_for.split(",")[0].strip()
+            candidate = forwarded_for.split(",", 1)[0].strip()
+            try:
+                return str(ipaddress.ip_address(candidate))
+            except ValueError:
+                pass
         return self.client_address[0]
 
     def validate_csrf(self) -> bool:
@@ -1003,7 +1086,8 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
         return self.parse_body()
 
     def is_same_origin_request(self) -> bool:
-        expected_host = self.headers.get("X-Forwarded-Host") or self.headers.get("Host", "")
+        forwarded_host = self.headers.get("X-Forwarded-Host", "") if self.request_from_trusted_proxy() else ""
+        expected_host = forwarded_host.split(",", 1)[0].strip() or self.headers.get("Host", "")
         expected_scheme = "https" if self.request_is_secure() else "http"
         origin = self.headers.get("Origin", "")
         referer = self.headers.get("Referer", "")
@@ -1095,7 +1179,9 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
         location = "/"
         if referer:
             parsed = urlparse(referer)
-            if parsed.netloc == (self.headers.get("X-Forwarded-Host") or self.headers.get("Host", "")):
+            forwarded_host = self.headers.get("X-Forwarded-Host", "") if self.request_from_trusted_proxy() else ""
+            expected_host = forwarded_host.split(",", 1)[0].strip() or self.headers.get("Host", "")
+            if parsed.netloc == expected_host:
                 location = parsed.path or "/"
         self.send_response(302)
         self.set_language_cookie(language)
@@ -1208,8 +1294,22 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
         password = form.get("password", "")
         if not self.app.db.username_is_valid(username) or not password or len(password) < 8:
             return self.render_signup("아이디는 영어 소문자와 숫자만 사용할 수 있으며, 비밀번호는 8자 이상이어야 합니다.")
+        signup_ip = self.client_ip()
+        is_carrier_ip = ip_in_ranges(signup_ip, self.app.config.carrier_ip_ranges)
+        cooldown_seconds = (
+            self.app.config.carrier_signup_cooldown_seconds
+            if is_carrier_ip
+            else self.app.config.signup_cooldown_seconds
+        )
         try:
-            user = self.app.db.create_user(username, password)
+            user = self.app.db.create_user(username, password, signup_ip, cooldown_seconds)
+        except SignupCooldownError as exc:
+            remaining = exc.remaining_seconds
+            if remaining >= 60:
+                wait_value = f"{(remaining + 59) // 60}분"
+            else:
+                wait_value = f"{remaining}초"
+            return self.render_signup(f"동일한 IP에서는 {wait_value} 후에 다시 가입할 수 있습니다.")
         except ValueError as exc:
             if str(exc) == "invalid_username":
                 return self.render_signup("아이디는 영어 소문자와 숫자만 사용할 수 있습니다.")
@@ -1902,6 +2002,13 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
         exclude_assistant_models = self.exclude_assistant_models_enabled()
         tiers = snapshot["tiers"]
         auto_promotion = snapshot["auto_promotion"]
+        default_model_id = str(snapshot.get("default_model_id") or "")
+        default_model_options = "".join(
+            f'<option value="{html.escape(model["model_id"])}" '
+            f'{"selected" if default_model_id == str(model["model_id"]) else ""}>'
+            f'{html.escape(model["display_name"])} ({html.escape(model["model_id"])})</option>'
+            for model in snapshot["models"]
+        )
         promotion_target_tiers = [tier for tier in tiers if not tier["is_system"]]
         user_rows = "".join(
             f"""
@@ -2041,6 +2148,13 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
                 <input id="exclude-assistant-models" type="checkbox" name="exclude_assistant_models" value="1" {'checked' if exclude_assistant_models else ''}>
                 <label for="exclude-assistant-models" style="display: block;">모델명에 assistant가 포함된 모델은 동기화 시 제외</label>
               </div>
+              <label>기본 모델
+                <select name="default_model_id">
+                  <option value="" {'selected' if not default_model_id else ''}>설정 안 함</option>
+                  {default_model_options}
+                </select>
+              </label>
+              <p class="hint">요청의 모델명이 비어 있거나 등록되지 않았을 때 사용할 모델입니다. 선택한 모델의 접근 티어와 비용 정책은 그대로 적용됩니다.</p>
               {self.render_auto_promotion_settings(auto_promotion, promotion_target_tiers)}
               <button type="submit">{html.escape(self.t('save'))}</button>
             </form>
@@ -2054,7 +2168,7 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
               </form>
             </div>
             <div class="table-wrap">
-              <table><thead><tr><th style="width: 24%;">티어 이름</th><th style="width: 12%;">순서</th><th style="width: 18%;">주간 충전량</th><th>작업</th></tr></thead><tbody>{tier_rows}</tbody></table>
+              <table class="admin-tier-table"><thead><tr><th style="width: 24%;">티어 이름</th><th style="width: 12%;">순서</th><th style="width: 18%;">주간 충전량</th><th>작업</th></tr></thead><tbody>{tier_rows}</tbody></table>
             </div>
             <form id="tier-bulk-form" method="post" action="/admin/tiers/update">
               {self.render_csrf_input()}
@@ -2092,7 +2206,7 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
         <section class="card">
           <h2>회원 현황</h2>
           <div class="table-wrap">
-            <table><thead><tr><th>고유 번호</th><th>아이디</th><th>현재 티어</th><th>티어 변경</th><th>권한</th><th>상태</th><th>마지막 접속 IP</th><th>주간 잔액</th><th>보너스 잔액</th><th>작업</th></tr></thead><tbody>{user_rows}</tbody></table>
+            <table class="member-table"><thead><tr><th>고유 번호</th><th>아이디</th><th>현재 티어</th><th>티어 변경</th><th>권한</th><th>상태</th><th>마지막 접속 IP</th><th>주간 잔액</th><th>보너스 잔액</th><th>작업</th></tr></thead><tbody>{user_rows}</tbody></table>
           </div>
         </section>
         """
@@ -2190,11 +2304,19 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
         if not self.validate_csrf():
             return self.send_error(HTTPStatus.FORBIDDEN)
         form = self.parsed_body()
+        default_model_id = str(form.get("default_model_id", "")).strip()
+        if default_model_id and not self.app.db.get_model_policy(default_model_id):
+            self.respond_html(
+                "서비스 설정 저장 실패",
+                '<section class="card"><p class="error">기본 모델은 현재 등록된 모델 중에서 선택해 주세요.</p></section>',
+            )
+            return
         self.app.db.set_setting("signup_open", "1" if form.get("signup_open") == "1" else "0")
         self.app.db.set_setting(
             "exclude_assistant_models",
             "1" if form.get("exclude_assistant_models") == "1" else "0",
         )
+        self.app.db.set_setting("default_model_id", default_model_id)
         promotion_target_tiers = [tier for tier in self.app.db.list_tiers() if not tier["is_system"]]
         if promotion_target_tiers:
             time_enabled = form.get("auto_promo_time_enabled") == "1"
@@ -2529,7 +2651,6 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
         api_user = self.api_user()
         if not api_user:
             return
-        self.ensure_models_seeded()
         rows = self.app.db.accessible_models_for_user(bool(api_user["is_admin"]), api_user["tier_sort_order"])
         data = [
             {"id": row["display_name"], "object": "model", "owned_by": self.app.config.app_name}
@@ -2551,19 +2672,28 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
         return user
 
     def handle_proxy_api(self, path: str) -> None:
+        path = self.normalize_api_path(path)
+        if path not in self.SUPPORTED_PROXY_PATHS:
+            return self.render_json({"error": {"message": "Unsupported API endpoint."}}, 404)
+        if self.command != "POST":
+            return self.render_json({"error": {"message": "Method not allowed."}}, 405)
         api_user = self.api_user()
         if not api_user:
             return
-        length = int(self.headers.get("Content-Length", "0"))
-        body = self.rfile.read(length) if length else b""
-        payload = json.loads(body.decode("utf-8") or "{}") if body else {}
+        body = self.read_request_body()
+        try:
+            payload = json.loads(body.decode("utf-8") or "{}") if body else {}
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            return self.render_json({"error": {"message": "Request body must be valid JSON."}}, 400)
+        if not isinstance(payload, dict):
+            return self.render_json({"error": {"message": "Request body must be a JSON object."}}, 400)
         wants_stream = self.normalize_stream_preference(path, payload)
-        model_id = payload.get("model")
-        if model_id:
-            self.ensure_model_available(model_id)
-        policy = self.app.db.get_model_policy_by_public_id(model_id) if model_id else None
+        policy = self.resolve_model_policy(payload.get("model"))
         if not policy:
-            return self.render_json({"error": {"message": "Model is not registered in FocusAway."}}, 400)
+            return self.render_json(
+                {"error": {"message": "Model is missing or unknown, and no default model is configured."}},
+                400,
+            )
         self.enforce_output_token_limit(path, payload, policy)
         if isinstance(payload, dict):
             payload["model"] = policy["model_id"]
@@ -2612,6 +2742,28 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
         self.wfile.write(response_body)
         if 200 <= status < 300 and policy["model_id"]:
             self.app.record_live_model_usage(policy["model_id"])
+
+    def resolve_model_policy(self, requested_model):
+        model_id = requested_model.strip() if isinstance(requested_model, str) else ""
+        policy = self.app.db.get_model_policy_by_public_id(model_id) if model_id else None
+        if policy:
+            return policy
+        default_model_id = self.app.db.get_setting("default_model_id", "").strip()
+        return self.app.db.get_model_policy(default_model_id) if default_model_id else None
+
+    @staticmethod
+    def normalize_api_path(path: str) -> str:
+        try:
+            decoded = unquote(path, errors="strict")
+        except UnicodeDecodeError as exc:
+            raise RequestError("Invalid API path.") from exc
+        if "\\" in decoded or "\x00" in decoded:
+            raise RequestError("Invalid API path.")
+        segments = decoded.split("/")
+        if any(segment in {".", ".."} for segment in segments):
+            raise RequestError("Invalid API path.")
+        normalized = "/" + "/".join(segment for segment in segments if segment)
+        return normalized.rstrip("/") or "/"
 
     def rewrite_response_model_name(
         self,
@@ -3083,26 +3235,6 @@ class FocusAwayHandler(BaseHTTPRequestHandler):
             else:
                 merged[key] = value
         return merged
-
-    def ensure_models_seeded(self) -> None:
-        if self.app.db.list_models():
-            return
-        try:
-            models = self.app.filter_upstream_models(self.app.upstream.fetch_models())
-            if models:
-                self.app.db.upsert_models(models)
-        except Exception as exc:
-            print(f"FocusAway model auto-sync failed: {exc}")
-
-    def ensure_model_available(self, model_id: str) -> None:
-        if self.app.db.get_model_policy_by_public_id(model_id):
-            return
-        try:
-            models = self.app.filter_upstream_models(self.app.upstream.fetch_models())
-            if models:
-                self.app.db.upsert_models(models)
-        except Exception as exc:
-            print(f"FocusAway model lookup sync failed for {model_id}: {exc}")
 
     def respond_html(self, title: str, body: str) -> None:
         language = self.current_language()

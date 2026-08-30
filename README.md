@@ -1,20 +1,20 @@
 # FocusAway
 
-<p align="center">
-  <b>English</b> ·
-  <a href="README.ko.md">한국어</a>
-</p>
-<br />
-
 FocusAway is a small OpenAI-compatible middleware for local or small-group LLM service operation.
 
 It sits between end-user frontends and one upstream OpenAI-compatible backend:
 
+```text
 frontend -> FocusAway -> upstream OpenAI-compatible backend
+```
 
 The upstream backend runs the models. FocusAway handles user accounts, per-user API keys, model access policy, quota charging, and a browser-based control panel.
 
-<a href='https://ko-fi.com/I2I41WXL3D' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi6.png?v=6' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>
+Current version footer:
+
+```text
+FocusAway v1.0.4, ⓒ 2026 Fur-Abyss.
+```
 
 ## Features
 
@@ -141,6 +141,8 @@ Do not use the upstream backend API key in your frontend. Use only your FocusAwa
 
 Use `Admin Panel -> Refresh Models From Backend` after changing models in the upstream backend.
 
+Model synchronization is manual and admin-only. API requests with a blank or unknown model name do not trigger an upstream model-list fetch. Configure `Service Settings -> Default Model` to replace those names with a registered model; its tier access and request cost still apply. The setting is cleared automatically if a later refresh removes that model.
+
 When models disappear upstream, they are removed from FocusAway policy storage on refresh. Existing model policy values are preserved for models that still exist.
 
 For each model, the admin can configure:
@@ -217,12 +219,15 @@ Supported core routes:
 - `POST /v1/responses`
 - `POST /v1/embeddings`
 - `POST /v1/images/generations`
+- `POST /v1/audio/speech`
 
 `GET /v1/models` returns only models accessible to the authenticated API user.
 
 Billable POST routes deduct the model's configured per-request cost before proxying.
 
-Streaming is supported for compatible upstreams and clients, but OpenAI-compatible backends can differ in event details. If model listing works but chat fails, test both stream and non-stream modes.
+Streaming is supported for compatible upstreams and clients. TTS audio responses are forwarded in binary chunks instead of being buffered entirely in memory. OpenAI-compatible backends can still differ in event details. If model listing works but chat fails, test both stream and non-stream modes.
+
+TTS support covers JSON requests to `POST /v1/audio/speech`. The requested model must first be synchronized from the upstream model list, and the normal per-request cost and tier access policy apply. The multipart speech-to-text endpoint `/v1/audio/transcriptions` is not currently supported.
 
 ## Configuration
 
@@ -248,6 +253,9 @@ Example:
   "upstream_extra_headers": "",
   "upstream_timeout_seconds": 300,
   "session_hours": 168,
+  "signup_cooldown_seconds": 3600,
+  "carrier_signup_cooldown_seconds": 600,
+  "trusted_proxy_cidrs": "127.0.0.1/32,::1/128",
   "app_name": "FocusAway",
   "operator_name": "FocusAway Operator",
   "contact_email": "operator@example.com",
@@ -265,6 +273,10 @@ Important fields:
 - `upstream_auth_header`: auth header name.
 - `upstream_auth_scheme`: bearer-like auth scheme.
 - `upstream_extra_headers`: JSON object string for additional static headers.
+- `signup_cooldown_seconds`: wait after a successful signup before the same ordinary IP can sign up again. Defaults to 3600 seconds.
+- `carrier_signup_cooldown_seconds`: shorter wait for known SKT, KT, and LG U+ LTE/5G ranges. Defaults to 600 seconds.
+- `carrier_ip_ranges`: optional comma-separated CIDR or `startIP-endIP` list replacing the built-in Korean carrier ranges.
+- `trusted_proxy_cidrs`: directly connected proxy ranges allowed to supply `X-Forwarded-*`. Defaults to loopback proxies only.
 
 ## Upstream API Key Encryption
 
@@ -290,7 +302,8 @@ If the master key is lost, the encrypted upstream API key cannot be recovered. R
 - Suspended users are blocked from web and API auth.
 - Upstream error bodies are not directly returned to users.
 - Config, SQLite DB, and local secret key files are chmod-attempted to `0600`.
-- `X-Forwarded-*` headers are trusted by current code. Expose FocusAway only behind a trusted proxy or tunnel if relying on those headers.
+- `X-Forwarded-*` is used only when the directly connected peer is in `trusted_proxy_cidrs`. Do not configure broad public proxy ranges.
+- Signup cooldown defaults to 60 minutes for ordinary IPs and 10 minutes for known Korean mobile-carrier IPs. Override it with `FOCUSAWAY_SIGNUP_COOLDOWN_SECONDS`, `FOCUSAWAY_CARRIER_SIGNUP_COOLDOWN_SECONDS`, and `FOCUSAWAY_CARRIER_IP_RANGES` when needed.
 - For public deployment, restrict `cors_allowed_origins` to trusted frontend origins.
 - A fresh empty database makes the first registered account admin. Create the admin account before exposing the service publicly.
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import math
 import os
 import re
 import sqlite3
@@ -15,6 +16,12 @@ from .quota import current_time_iso, current_week_anchor
 from .security import generate_token, hash_password, verify_password
 
 USERNAME_RE = re.compile(r"^[a-z0-9]+$")
+
+
+class SignupCooldownError(ValueError):
+    def __init__(self, remaining_seconds: int):
+        self.remaining_seconds = max(1, int(remaining_seconds))
+        super().__init__(f"signup_cooldown:{self.remaining_seconds}")
 
 
 class FocusAwayDB:
@@ -68,6 +75,15 @@ class FocusAwayDB:
                     created_at TEXT NOT NULL,
                     FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
                 );
+
+                CREATE TABLE IF NOT EXISTS signup_events (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    ip_address TEXT NOT NULL,
+                    created_at TEXT NOT NULL
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_signup_events_ip_created
+                ON signup_events(ip_address, created_at DESC);
 
                 CREATE TABLE IF NOT EXISTS tiers (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -124,6 +140,7 @@ class FocusAwayDB:
             self._ensure_setting(conn, "timezone", self.config.timezone)
             self._ensure_setting(conn, "signup_open", "1")
             self._ensure_setting(conn, "exclude_assistant_models", "0")
+            self._ensure_setting(conn, "default_model_id", "")
 
     def _ensure_tiers(self, conn: sqlite3.Connection) -> None:
         count = conn.execute("SELECT COUNT(*) AS count FROM tiers").fetchone()["count"]
@@ -695,12 +712,38 @@ class FocusAwayDB:
                 raise ValueError("티어를 찾을 수 없습니다.")
             self._set_user_tier(conn, user, new_tier)
 
-    def create_user(self, username: str, password: str) -> sqlite3.Row:
+    def create_user(
+        self,
+        username: str,
+        password: str,
+        signup_ip: str = "",
+        signup_cooldown_seconds: int = 0,
+    ) -> sqlite3.Row:
         self.ensure_weekly_reset()
         normalized_username = self.normalize_username(username)
         if not self.username_is_valid(normalized_username):
             raise ValueError("invalid_username")
+        password_hash = hash_password(password)
         with self.connect() as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            normalized_ip = str(signup_ip or "").strip()[:255]
+            cooldown_seconds = max(0, int(signup_cooldown_seconds))
+            now = datetime.now(ZoneInfo(self.config.timezone))
+            if normalized_ip and cooldown_seconds:
+                previous = conn.execute(
+                    "SELECT created_at FROM signup_events WHERE ip_address = ? ORDER BY id DESC LIMIT 1",
+                    (normalized_ip,),
+                ).fetchone()
+                if previous:
+                    try:
+                        previous_at = datetime.fromisoformat(str(previous["created_at"]))
+                        if previous_at.tzinfo is None:
+                            previous_at = previous_at.replace(tzinfo=ZoneInfo(self.config.timezone))
+                        elapsed = (now - previous_at.astimezone(ZoneInfo(self.config.timezone))).total_seconds()
+                    except ValueError:
+                        elapsed = cooldown_seconds
+                    if elapsed < cooldown_seconds:
+                        raise SignupCooldownError(math.ceil(cooldown_seconds - elapsed))
             user_count = conn.execute("SELECT COUNT(*) AS count FROM users").fetchone()["count"]
             is_admin = 1 if user_count == 0 else 0
             base_tier_id = self._base_tier_id(conn)
@@ -719,7 +762,7 @@ class FocusAwayDB:
                 (
                     normalized_username,
                     self.legacy_identity_for_username(normalized_username),
-                    hash_password(password),
+                    password_hash,
                     is_admin,
                     generate_token("fk"),
                     weekly_quota,
@@ -728,6 +771,11 @@ class FocusAwayDB:
                 ),
             )
             user = conn.execute("SELECT * FROM users WHERE username = ?", (normalized_username,)).fetchone()
+            if normalized_ip:
+                conn.execute(
+                    "INSERT INTO signup_events(ip_address, created_at) VALUES(?, ?)",
+                    (normalized_ip, now.isoformat()),
+                )
             if not is_admin:
                 conn.execute(
                     """
@@ -1001,6 +1049,13 @@ class FocusAwayDB:
                 )
             else:
                 conn.execute("DELETE FROM model_policies")
+            default_row = conn.execute(
+                "SELECT value FROM settings WHERE key = 'default_model_id'"
+            ).fetchone()
+            if default_row and str(default_row["value"] or "") not in model_ids:
+                conn.execute(
+                    "UPDATE settings SET value = '' WHERE key = 'default_model_id'"
+                )
 
     def update_model_policy(self, model_id: str, cost_per_request: float, members_allowed: bool) -> None:
         with self.connect() as conn:
@@ -1243,4 +1298,5 @@ class FocusAwayDB:
             "tiers": [dict(row) for row in self.list_tiers()],
             "users": [dict(row) for row in self.list_users()],
             "models": [dict(row) for row in self.list_models()],
+            "default_model_id": self.get_setting("default_model_id", ""),
         }

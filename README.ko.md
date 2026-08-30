@@ -1,20 +1,20 @@
 # FocusAway
 
-<p align="center">
-  <a href="README.md">English</a> ·
-  <b>한국어</b>
-</p>
-<br />
-
 FocusAway는 로컬 또는 소규모 그룹용 LLM 서비스를 운영하기 위한 OpenAI 호환 미들웨어입니다.
 
 구조는 다음과 같습니다.
 
+```text
 프론트엔드 -> FocusAway -> OpenAI 호환 업스트림 백엔드
+```
 
 실제 모델 실행은 업스트림 백엔드가 담당합니다. FocusAway는 사용자 계정, 사용자별 API 키, 모델 접근 정책, 할당량 차감, 웹 관리 패널을 담당합니다.
 
-<a href='https://ko-fi.com/I2I41WXL3D' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi6.png?v=6' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>
+현재 버전 푸터:
+
+```text
+FocusAway v1.0.4, ⓒ 2026 Fur-Abyss.
+```
 
 ## 주요 기능
 
@@ -143,6 +143,8 @@ Authorization: Bearer fk_...
 
 업스트림에서 사라진 모델은 새로고침 시 FocusAway의 모델 정책 저장소에서도 제거됩니다. 계속 존재하는 모델의 기존 정책은 보존됩니다.
 
+모델 동기화는 관리자 패널에서만 수동으로 실행됩니다. 사용자 API 요청에 빈 모델명이나 등록되지 않은 모델명이 들어와도 업스트림 모델 목록을 자동 조회하지 않습니다. 관리자 패널의 `서비스 설정 -> 기본 모델`을 지정하면 이런 요청은 기본 모델로 대체되며, 기본 모델의 티어 접근 정책과 요청 비용이 그대로 적용됩니다. 기본 모델이 업스트림 새로고침에서 제거되면 설정도 자동 해제됩니다.
+
 모델별로 설정 가능한 항목:
 
 - 1회 요청 비용
@@ -217,12 +219,15 @@ FocusAway에는 기본 회원 티어가 있으며, 초기 이름은 `Tier 0`입�
 - `POST /v1/responses`
 - `POST /v1/embeddings`
 - `POST /v1/images/generations`
+- `POST /v1/audio/speech`
 
 `GET /v1/models`는 인증된 API 사용자가 실제로 사용할 수 있는 모델만 반환합니다.
 
 비용이 부과되는 POST 라우트는 업스트림에 전달되기 전에 모델별 1회 비용을 차감합니다.
 
-스트리밍은 호환되는 업스트림과 클라이언트에서 지원됩니다. 다만 OpenAI 호환 백엔드마다 이벤트 형식이 조금씩 다를 수 있습니다. 모델 목록은 뜨는데 채팅이 실패하면 stream 모드와 non-stream 모드를 모두 확인하세요.
+스트리밍은 호환되는 업스트림과 클라이언트에서 지원됩니다. TTS 음성 응답은 전체 파일을 메모리에 버퍼링하지 않고 바이너리 청크로 전달됩니다. 다만 OpenAI 호환 백엔드마다 이벤트 형식이 조금씩 다를 수 있습니다. 모델 목록은 뜨는데 채팅이 실패하면 stream 모드와 non-stream 모드를 모두 확인하세요.
+
+TTS는 JSON 요청을 사용하는 `POST /v1/audio/speech`를 지원합니다. 요청의 모델은 먼저 업스트림 모델 목록과 동기화되어 있어야 하며, 다른 과금 대상 API와 동일하게 모델별 1회 비용과 티어 접근 정책이 적용됩니다. 음성 인식용 multipart 엔드포인트인 `/v1/audio/transcriptions`는 현재 지원 범위에 포함되지 않습니다.
 
 ## 설정
 
@@ -248,6 +253,9 @@ FocusAway에는 기본 회원 티어가 있으며, 초기 이름은 `Tier 0`입�
   "upstream_extra_headers": "",
   "upstream_timeout_seconds": 300,
   "session_hours": 168,
+  "signup_cooldown_seconds": 3600,
+  "carrier_signup_cooldown_seconds": 600,
+  "trusted_proxy_cidrs": "127.0.0.1/32,::1/128",
   "app_name": "FocusAway",
   "operator_name": "FocusAway 운영자",
   "contact_email": "operator@example.com",
@@ -265,6 +273,10 @@ FocusAway에는 기본 회원 티어가 있으며, 초기 이름은 `Tier 0`입�
 - `upstream_auth_header`: 인증 헤더 이름.
 - `upstream_auth_scheme`: bearer류 인증 스킴.
 - `upstream_extra_headers`: 추가 고정 헤더 JSON 문자열.
+- `signup_cooldown_seconds`: 일반 IP에서 성공한 가입 후 동일 IP의 재가입 대기시간(초). 기본 3600초.
+- `carrier_signup_cooldown_seconds`: 한국 통신 3사 LTE/5G 대역의 재가입 대기시간(초). 기본 600초.
+- `carrier_ip_ranges`: 내장 통신사 IPv4/IPv6 대역을 대체할 쉼표 구분 CIDR 또는 `시작IP-끝IP` 목록. 보통은 생략합니다.
+- `trusted_proxy_cidrs`: `X-Forwarded-*`를 신뢰할 직접 연결 프록시 대역. 기본값은 로컬 프록시만 허용합니다.
 
 ## 업스트림 API 키 암호화
 
@@ -290,7 +302,8 @@ FocusAway는 다음 순서로 암호화 마스터 키를 선택합니다.
 - 정지된 사용자는 웹/API 인증이 차단됩니다.
 - 업스트림 에러 본문은 사용자에게 직접 전달되지 않습니다.
 - config, SQLite DB, 로컬 secret key 파일은 `0600` 권한 설정을 시도합니다.
-- 현재 코드는 `X-Forwarded-*` 헤더를 신뢰합니다. 해당 헤더에 의존하는 공개 운영은 신뢰 가능한 프록시나 터널 뒤에서만 하세요.
+- `X-Forwarded-*` 헤더는 직접 연결한 상대가 `trusted_proxy_cidrs`에 포함될 때만 신뢰합니다. 공개 프록시 주소를 광범위하게 등록하지 마세요.
+- 회원가입 쿨타임은 성공한 가입을 기준으로 일반 IP 60분, 통신 3사 모바일 IP 10분이 기본값입니다. 환경변수 `FOCUSAWAY_SIGNUP_COOLDOWN_SECONDS`, `FOCUSAWAY_CARRIER_SIGNUP_COOLDOWN_SECONDS`, `FOCUSAWAY_CARRIER_IP_RANGES`로 조정할 수 있습니다.
 - 공개 운영 시 `cors_allowed_origins`를 신뢰하는 프론트엔드 주소로 제한하세요.
 - 완전히 새 DB에서는 첫 가입자가 관리자가 됩니다. 서비스를 공개하기 전에 먼저 관리자 계정을 생성하세요.
 

@@ -6,6 +6,7 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
+from .network import DEFAULT_KOREAN_CARRIER_IP_RANGES
 from .secret import decrypt_text, encrypt_text, is_encrypted
 
 
@@ -30,6 +31,10 @@ class AppConfig:
     upstream_extra_headers: str = ""
     upstream_timeout_seconds: int = 300
     session_hours: int = 24 * 7
+    signup_cooldown_seconds: int = 60 * 60
+    carrier_signup_cooldown_seconds: int = 10 * 60
+    carrier_ip_ranges: str = DEFAULT_KOREAN_CARRIER_IP_RANGES
+    trusted_proxy_cidrs: str = "127.0.0.1/32,::1/128"
     app_name: str = "FocusAway"
     operator_name: str = "FocusAway 운영자"
     contact_email: str = ""
@@ -117,6 +122,32 @@ def load_config(config_path: str | None = None) -> AppConfig:
         session_hours=int(
             os.environ.get("FOCUSAWAY_SESSION_HOURS", data.get("session_hours", AppConfig.session_hours))
         ),
+        signup_cooldown_seconds=max(
+            0,
+            int(
+                os.environ.get(
+                    "FOCUSAWAY_SIGNUP_COOLDOWN_SECONDS",
+                    data.get("signup_cooldown_seconds", AppConfig.signup_cooldown_seconds),
+                )
+            ),
+        ),
+        carrier_signup_cooldown_seconds=max(
+            0,
+            int(
+                os.environ.get(
+                    "FOCUSAWAY_CARRIER_SIGNUP_COOLDOWN_SECONDS",
+                    data.get("carrier_signup_cooldown_seconds", AppConfig.carrier_signup_cooldown_seconds),
+                )
+            ),
+        ),
+        carrier_ip_ranges=os.environ.get(
+            "FOCUSAWAY_CARRIER_IP_RANGES",
+            data.get("carrier_ip_ranges", AppConfig.carrier_ip_ranges),
+        ),
+        trusted_proxy_cidrs=os.environ.get(
+            "FOCUSAWAY_TRUSTED_PROXY_CIDRS",
+            data.get("trusted_proxy_cidrs", AppConfig.trusted_proxy_cidrs),
+        ),
         app_name=os.environ.get("FOCUSAWAY_APP_NAME", data.get("app_name", AppConfig.app_name)),
         operator_name=os.environ.get("FOCUSAWAY_OPERATOR_NAME", data.get("operator_name", AppConfig.operator_name)),
         contact_email=os.environ.get("FOCUSAWAY_CONTACT_EMAIL", data.get("contact_email", AppConfig.contact_email)),
@@ -152,6 +183,10 @@ def save_config(config: AppConfig, config_path: str | None = None) -> Path:
                 "upstream_extra_headers": config.upstream_extra_headers,
                 "upstream_timeout_seconds": config.upstream_timeout_seconds,
                 "session_hours": config.session_hours,
+                "signup_cooldown_seconds": config.signup_cooldown_seconds,
+                "carrier_signup_cooldown_seconds": config.carrier_signup_cooldown_seconds,
+                "carrier_ip_ranges": config.carrier_ip_ranges,
+                "trusted_proxy_cidrs": config.trusted_proxy_cidrs,
                 "app_name": config.app_name,
                 "operator_name": config.operator_name,
                 "contact_email": config.contact_email,
