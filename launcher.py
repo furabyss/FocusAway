@@ -60,7 +60,7 @@ class Launcher:
         self.root = tk.Tk()
         self.root.title("FocusAway Launcher")
         self.root.geometry("860x600")
-        self.root.minsize(760, 560)
+        self.root.minsize(760, 600)
         self.root.configure(bg="#f5f5f7")
 
         self.config = load_config()
@@ -322,6 +322,10 @@ class Launcher:
         self.root.destroy()
 
     def run(self) -> None:
+        # Complete layout before Aqua's first display pass. Tk 9.1 on macOS
+        # can otherwise leave classic widgets blank until the window repaints.
+        # https://core.tcl-lang.org/tk/tktview/40dc19ee9e7a41d59237
+        self.root.update_idletasks()
         self.root.mainloop()
 
 

@@ -21,7 +21,7 @@ from .security import generate_token
 from .upstream import UpstreamClient
 
 
-APP_VERSION = "1.0.4"
+APP_VERSION = "1.0.5"
 APP_COPYRIGHT = "ⓒ 2026 Fur-Abyss."
 LANGUAGE_OPTIONS = {"ko": "한국어", "en": "English"}
 
